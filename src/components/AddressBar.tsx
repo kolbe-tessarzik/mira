@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useTabs } from '../features/tabs/TabsProvider';
 
-export default function AddressBar() {
+type AddressBarProps = {
+  inputRef?: React.RefObject<HTMLInputElement>;
+};
+
+export default function AddressBar({ inputRef }: AddressBarProps) {
   const { tabs, activeId, navigate, goBack, goForward, reload } = useTabs();
 
   const [input, setInput] = useState('');
@@ -76,6 +80,7 @@ export default function AddressBar() {
 
       {/* URL input */}
       <input
+        ref={inputRef}
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && go()}

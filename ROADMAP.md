@@ -11,9 +11,9 @@
 ## v0.3.0
 - [x] Back/forward buttons
 - [x] Refresh button
-- [ ] Ctrl+T new tab
-- [ ] Ctrl+W close tab
-- [ ] Ctrl+L focus address bar
+- [x] Ctrl+T new tab
+- [x] Ctrl+W close tab
+- [x] Ctrl+L focus address bar
 - [ ] Address bar can search google
 
 ## v0.4.0
