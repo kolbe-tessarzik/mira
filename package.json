@@ -14,41 +14,47 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\""
   },
   "build": {
-  "appId": "com.fatalmistake02.mira",
-  "productName": "Mira",
-  "directories": {
-    "output": "release"
+    "appId": "com.fatalmistake02.mira",
+    "productName": "Mira",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "artifactName": "${productName}-${version}-win.${ext}",
+      "target": [
+        "portable",
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "artifactName": "${productName}-${version}-win-setup.${ext}",
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "mac": {
+      "artifactName": "${productName}-${version}-mac.${ext}",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.utilities"
+    },
+    "linux": {
+      "artifactName": "${productName}-${version}-linux.${ext}",
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm"
+      ],
+      "category": "Utility"
+    }
   },
-  "files": [
-    "dist/**/*",
-    "electron/**/*",
-    "package.json"
-  ],
-  "win": {
-    "artifactName": "${productName}-${version}-win.${ext}",
-    "target": ["portable", "nsis"]
-  },
-
-  "nsis": {
-    "artifactName": "${productName}-${version}-win-setup.${ext}",
-    "oneClick": false,
-    "perMachine": false,
-    "allowToChangeInstallationDirectory": true
-  },
-
-  "mac": {
-    "artifactName": "${productName}-${version}-mac.${ext}",
-    "target": ["dmg", "zip"],
-    "category": "public.app-category.utilities"
-  },
-
-  "linux": {
-    "artifactName": "${productName}-${version}-linux.${ext}",
-    "target": ["AppImage", "deb", "rpm"],
-    "category": "Utility"
-  }
-},
-
   "dependencies": {
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react": "^7.37.5",
@@ -58,6 +64,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@types/electron": "^1.4.38",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",

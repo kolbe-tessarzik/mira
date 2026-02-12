@@ -19,7 +19,7 @@ export default function TabsProvider({ children }: { children: React.ReactNode }
 
   const [activeId, setActiveId] = useState(tabs[0].id);
 
-  const newTab = (url = 'https://google.com') => {
+  const newTab = (url = 'mira://NewTab') => {
     const id = crypto.randomUUID();
     setTabs((t) => [...t, { id, url }]);
     setActiveId(id);

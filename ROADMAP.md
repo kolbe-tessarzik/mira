@@ -21,7 +21,6 @@
 - [ ] History saved to disk
 - [ ] Restore tabs on restart
 - [ ] Downloads manager
-- [ ] Remember window size/position
 
 ## v0.5.0
 - [ ] Find in page (Ctrl+F)
@@ -34,10 +33,9 @@
 - [ ] Error pages (offline, 404, etc.)
 - [ ] Tab sleeping (save memory)
 - [ ] Performance improvements
-- [ ] Icons / branding polish
+- [ ] Icons / branding
 
 ## v1.0.0 — Stable Release
-- [ ] Installer & portable builds
-- [ ] Crash handling
-- [ ] Clean UI polish
+- [ ] Installer & portable builds for Windows, macOS, and Linux
+- [ ] Clean UI
 

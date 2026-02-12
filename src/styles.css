@@ -1,20 +1,10 @@
-/* Make sure the body takes full height */
-html, body {
-  height: 100%;
+html,
+body {
   margin: 0;
   padding: 0;
-  overflow: hidden;
 }
 
-/* Make the root div take full viewport height */
 #root {
   height: 100vh;
   width: 100vw;
-}
-
-/* Style for webview to fill the container */
-webview {
-  width: 100%;
-  height: 100%;
-  display: block;
 }

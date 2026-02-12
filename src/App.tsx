@@ -6,13 +6,14 @@ import AddressBar from './components/AddressBar';
 export default function App() {
   return (
     <TabsProvider>
-
-      <div style={{ 
-        height: '100vh', 
-        display: 'flex', 
-        flexDirection: 'column',
-        width: '100vw'
-      }}>
+      <div
+        style={{
+          height: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          width: '100vw',
+        }}
+      >
         <TabBar />
         <AddressBar />
         <TabView />
@@ -20,8 +21,3 @@ export default function App() {
     </TabsProvider>
   );
 }
-
-
-
-
-
