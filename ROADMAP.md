@@ -38,4 +38,5 @@
 ## v1.0.0 — Stable Release
 - [ ] Installer & portable builds for Windows, macOS, and Linux
 - [ ] Clean UI
-
+- [ ] Fix bugs
+ 
