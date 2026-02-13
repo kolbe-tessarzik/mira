@@ -36,11 +36,11 @@ function isInternal(url: string) {
   return url.startsWith('mira://');
 }
 
-function renderInternal(url: string) {
+function renderInternal(url: string, reloadToken: number) {
   const routeRaw = url.replace(/^mira:\/\//, '').replace(/^\/+|\/+$/g, '');
   const route = routeRaw.toLowerCase();
   const Page = pages[route];
-  if (Page) return <Page />;
+  if (Page) return <Page key={`${route}-${reloadToken}`} />;
   return <div style={{ padding: 20 }}>Unknown internal page: {routeRaw}</div>;
 }
 
@@ -66,7 +66,9 @@ export default function TabView() {
             }}
           >
             {isInternal(tab.url) ? (
-              <div style={{ flex: 1, overflow: 'auto' }}>{renderInternal(tab.url)}</div>
+              <div style={{ flex: 1, overflow: 'auto' }}>
+                {renderInternal(tab.url, tab.reloadToken)}
+              </div>
             ) : (
               <webview
                 ref={(el) => {

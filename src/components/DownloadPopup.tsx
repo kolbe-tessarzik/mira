@@ -1,5 +1,5 @@
-// src/components/DownloadPopup.tsx
 import { useDownloads } from '../features/downloads/DownloadProvider';
+import { useTabs } from '../features/tabs/TabsProvider';
 
 interface Props {
   onClose: () => void;
@@ -7,8 +7,7 @@ interface Props {
 
 export default function DownloadPopup({ onClose }: Props) {
   const { downloads, cancel, openFolder } = useDownloads();
-
-  // Show the *most recent* 5 items (you can change the number)
+  const { newTab } = useTabs();
   const recent = [...downloads].sort((a, b) => b.startedAt - a.startedAt).slice(0, 5);
 
   return (
@@ -17,8 +16,8 @@ export default function DownloadPopup({ onClose }: Props) {
         position: 'absolute',
         right: 0,
         top: 'calc(100% + 4px)',
-        width: 300,
-        maxHeight: 400,
+        width: 320,
+        maxHeight: 420,
         overflowY: 'auto',
         background: '#222',
         border: '1px solid #444',
@@ -28,75 +27,98 @@ export default function DownloadPopup({ onClose }: Props) {
         boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
         <strong style={{ color: '#fff' }}>Downloads</strong>
-        <button
-          onClick={onClose}
-          style={{ background: 'transparent', border: 'none', color: '#fff' }}
-        >
-          ✕
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => {
+              newTab('mira://Downloads');
+              onClose();
+            }}
+            style={{
+              background: 'transparent',
+              border: '1px solid #666',
+              borderRadius: 4,
+              color: '#fff',
+              cursor: 'pointer',
+              fontSize: 12,
+              padding: '2px 6px',
+            }}
+          >
+            Open Page
+          </button>
+          <button
+            onClick={onClose}
+            style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }}
+          >
+            Close
+          </button>
+        </div>
       </div>
 
       {recent.length === 0 && <div style={{ color: '#aaa' }}>No recent downloads</div>}
 
-      {recent.map((d) => (
-        <div key={d.id} style={{ marginBottom: 8, color: '#fff' }}>
-          <div style={{ fontSize: 13, wordBreak: 'break-all' }}>{d.filename}</div>
+      {recent.map((d) => {
+        const progress = d.totalBytes > 0 ? (d.receivedBytes / d.totalBytes) * 100 : 0;
+        const isActive = d.status === 'pending' || d.status === 'in-progress';
 
-          {/* progress bar */}
-          {d.status === 'in-progress' && (
-            <div style={{ height: 4, background: '#555', borderRadius: 2, marginTop: 2 }}>
-              <div
-                style={{
-                  width: `${(d.receivedBytes / (d.totalBytes || 1)) * 100}%`,
-                  height: '100%',
-                  background: '#4caf50',
-                }}
-              />
+        return (
+          <div key={`${d.id}-${d.startedAt}`} style={{ marginBottom: 10, color: '#fff' }}>
+            <div style={{ fontSize: 13, wordBreak: 'break-all' }}>{d.filename}</div>
+
+            {isActive && (
+              <div style={{ height: 4, background: '#555', borderRadius: 2, marginTop: 3 }}>
+                <div
+                  style={{
+                    width: `${Math.min(progress, 100)}%`,
+                    height: '100%',
+                    background: '#4caf50',
+                  }}
+                />
+              </div>
+            )}
+
+            <div style={{ fontSize: 11, opacity: 0.85, marginTop: 4 }}>
+              {d.status === 'pending' && 'Starting...'}
+              {d.status === 'in-progress' &&
+                `${(d.receivedBytes / 1024).toFixed(0)} KB / ${d.totalBytes > 0 ? `${(d.totalBytes / 1024).toFixed(0)} KB` : 'unknown size'}`}
+              {d.status === 'completed' && 'Completed'}
+              {d.status === 'error' && `Error: ${d.error ?? 'unknown'}`}
+              {d.status === 'canceled' && 'Canceled'}
+
+              {d.status === 'completed' && d.savePath && (
+                <button
+                  onClick={() => openFolder(d.savePath!)}
+                  style={{
+                    marginLeft: 8,
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#4caf50',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Show
+                </button>
+              )}
+
+              {isActive && (
+                <button
+                  onClick={() => cancel(d.id)}
+                  style={{
+                    marginLeft: 8,
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#e53935',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
             </div>
-          )}
-
-          {/* status line */}
-          <div style={{ fontSize: 11, opacity: 0.8, marginTop: 2 }}>
-            {d.status === 'completed' && '✔ Completed'}
-            {d.status === 'error' && `❌ ${d.error}`}
-            {d.status === 'canceled' && '✖ Canceled'}
-            {d.status === 'in-progress' &&
-              `${(d.receivedBytes / 1024).toFixed(0)} KB / ${d.totalBytes ? `${(d.totalBytes / 1024).toFixed(0)} KB` : '??'}`}
-
-            {/* actions */}
-            {d.status === 'completed' && d.savePath && (
-              <button
-                onClick={() => openFolder(d.savePath!)}
-                style={{
-                  marginLeft: 6,
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#4caf50',
-                  cursor: 'pointer',
-                }}
-              >
-                📂
-              </button>
-            )}
-            {d.status === 'in-progress' && (
-              <button
-                onClick={() => cancel(d.id)}
-                style={{
-                  marginLeft: 6,
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#e53935',
-                  cursor: 'pointer',
-                }}
-              >
-                ✖
-              </button>
-            )}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

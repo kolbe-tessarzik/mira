@@ -17,10 +17,10 @@
 - [x] Address bar can search google
 
 ## v0.4.0
-- [ ] Basic history
-- [ ] History saved to disk
-- [ ] Restore tabs on restart
-- [ ] Downloads manager
+- [x] Basic history
+- [x] History saved to disk
+- [x] Restore tabs on restart
+- [x] Downloads manager
 
 ## v0.5.0
 - [ ] Find in page (Ctrl+F)

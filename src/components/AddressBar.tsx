@@ -3,7 +3,7 @@ import { useTabs } from '../features/tabs/TabsProvider';
 import DownloadButton from './DownloadButton';
 
 type AddressBarProps = {
-  inputRef?: React.RefObject<HTMLInputElement>;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
 };
 
 export default function AddressBar({ inputRef }: AddressBarProps) {

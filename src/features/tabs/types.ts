@@ -3,4 +3,5 @@ export type Tab = {
   url: string;
   history: string[];
   historyIndex: number;
+  reloadToken: number;
 };

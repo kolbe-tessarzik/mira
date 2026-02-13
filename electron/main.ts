@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, shell, session } from 'electron';
 import { v4 as uuidv4 } from 'uuid'; // install uuid ^9
 import type { DownloadItem } from 'electron';
+import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -8,6 +9,80 @@ import { fileURLToPath } from 'url';
 const downloadMap = new Map<string, DownloadItem>();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const HISTORY_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+
+interface HistoryEntry {
+  id: string;
+  url: string;
+  title: string;
+  visitedAt: number;
+}
+
+let historyCache: HistoryEntry[] = [];
+
+function getHistoryFilePath() {
+  return path.join(app.getPath('userData'), 'history.json');
+}
+
+function pruneHistory(entries: HistoryEntry[]): HistoryEntry[] {
+  const cutoff = Date.now() - HISTORY_RETENTION_MS;
+  return entries
+    .filter((entry) => entry.visitedAt >= cutoff)
+    .sort((a, b) => b.visitedAt - a.visitedAt);
+}
+
+async function persistHistory() {
+  await fs.writeFile(getHistoryFilePath(), JSON.stringify(historyCache, null, 2), 'utf-8');
+}
+
+async function loadHistory() {
+  try {
+    const raw = await fs.readFile(getHistoryFilePath(), 'utf-8');
+    const parsed = JSON.parse(raw) as HistoryEntry[];
+    historyCache = pruneHistory(Array.isArray(parsed) ? parsed : []);
+    await persistHistory();
+  } catch {
+    historyCache = [];
+  }
+}
+
+async function addHistoryEntry(payload: { url?: string; title?: string }) {
+  const url = payload.url?.trim();
+  if (!url || url.startsWith('mira://')) return;
+
+  const now = Date.now();
+  const title = payload.title?.trim() || url;
+  const latest = historyCache[0];
+
+  if (latest && latest.url === url && now - latest.visitedAt < 1500) {
+    return;
+  }
+
+  historyCache = pruneHistory([
+    {
+      id: uuidv4(),
+      url,
+      title,
+      visitedAt: now,
+    },
+    ...historyCache,
+  ]);
+
+  await persistHistory();
+}
+
+function setupHistoryHandlers() {
+  ipcMain.handle('history-add', async (_, payload: { url?: string; title?: string }) => {
+    await addHistoryEntry(payload ?? {});
+    return true;
+  });
+
+  ipcMain.handle('history-list', async () => {
+    historyCache = pruneHistory(historyCache);
+    await persistHistory();
+    return historyCache;
+  });
+}
 
 function setupDownloadHandlers(win: BrowserWindow) {
   const ses = session.defaultSession;
@@ -105,7 +180,9 @@ function createWindow(): BrowserWindow {
   return win;
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  await loadHistory().catch(() => undefined);
+  setupHistoryHandlers();
   const win = createWindow();
   setupDownloadHandlers(win);
 });

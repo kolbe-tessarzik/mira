@@ -1,30 +1,32 @@
 import React, { createContext, useContext, useEffect, useReducer } from 'react';
-import { electron } from '../../electronBridge';               // <-- NEW
-type IpcRendererEvent = any;
-import type { DownloadItem } from './types';                    // <-- NEW
+import { electron } from '../../electronBridge';
+import type { DownloadItem } from './types';
 
-// ---------- payload interfaces (unchanged) ----------
+type IpcRendererEvent = unknown;
+
 interface DownloadStartPayload {
   id: string;
   url: string;
   filename: string;
   totalBytes: number;
 }
+
 interface DownloadProgressPayload {
   id: string;
   receivedBytes: number;
   totalBytes: number;
 }
+
 interface DownloadDonePayload {
   id: string;
   savePath: string;
 }
+
 interface DownloadErrorPayload {
   id: string;
   error: string;
 }
 
-// ---------- reducer (unchanged) ----------
 type State = DownloadItem[];
 type Action =
   | { type: 'ADD'; payload: DownloadItem }
@@ -35,10 +37,17 @@ type Action =
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case 'ADD':
+    case 'ADD': {
+      const existingIdx = state.findIndex((d) => d.id === action.payload.id);
+      if (existingIdx !== -1) {
+        const next = [...state];
+        next[existingIdx] = { ...next[existingIdx], ...action.payload };
+        return next;
+      }
       return [...state, action.payload];
+    }
     case 'PROGRESS':
-      return state.map(d =>
+      return state.map((d) =>
         d.id === action.payload.id
           ? {
               ...d,
@@ -49,19 +58,19 @@ function reducer(state: State, action: Action): State {
           : d,
       );
     case 'DONE':
-      return state.map(d =>
+      return state.map((d) =>
         d.id === action.payload.id
           ? { ...d, status: 'completed', savePath: action.payload.savePath, endedAt: Date.now() }
           : d,
       );
     case 'ERROR':
-      return state.map(d =>
+      return state.map((d) =>
         d.id === action.payload.id
           ? { ...d, status: 'error', error: action.payload.error, endedAt: Date.now() }
           : d,
       );
     case 'CANCEL':
-      return state.map(d =>
+      return state.map((d) =>
         d.id === action.payload.id ? { ...d, status: 'canceled', endedAt: Date.now() } : d,
       );
     default:
@@ -69,7 +78,6 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-// ---------- context ----------
 const DownloadContext = createContext<{
   downloads: DownloadItem[];
   cancel: (id: string) => void;
@@ -82,15 +90,12 @@ export const useDownloads = () => {
   return ctx;
 };
 
-// ---------- provider ----------
 export default function DownloadProvider({ children }: { children: React.ReactNode }) {
   const [downloads, dispatch] = useReducer(reducer, []);
 
-  // ---- IPC listeners -------------------------------------------------------
   useEffect(() => {
-    // Defensive guard – the bridge may be missing in a non‑Electron preview
     if (!electron?.ipcRenderer) {
-      console.warn('⚠️ electron ipcRenderer bridge not available');
+      console.warn('electron ipcRenderer bridge not available');
       return;
     }
 
@@ -102,15 +107,11 @@ export default function DownloadProvider({ children }: { children: React.ReactNo
         receivedBytes: 0,
         status: 'pending',
         startedAt: Date.now(),
-        // optional fields start undefined
-        endedAt: undefined,
-        savePath: undefined,
-        error: undefined,
       };
       dispatch({ type: 'ADD', payload: item });
     };
 
-    const onProg = (_: IpcRendererEvent, data: DownloadProgressPayload) => {
+    const onProgress = (_: IpcRendererEvent, data: DownloadProgressPayload) => {
       dispatch({ type: 'PROGRESS', payload: data });
     };
 
@@ -123,19 +124,18 @@ export default function DownloadProvider({ children }: { children: React.ReactNo
     };
 
     ipcRenderer.on('download-start', onStart);
-    ipcRenderer.on('download-progress', onProg);
+    ipcRenderer.on('download-progress', onProgress);
     ipcRenderer.on('download-done', onDone);
     ipcRenderer.on('download-error', onError);
 
     return () => {
-      ipcRenderer.removeListener('download-start', onStart);
-      ipcRenderer.removeListener('download-progress', onProg);
-      ipcRenderer.removeListener('download-done', onDone);
-      ipcRenderer.removeListener('download-error', onError);
+      ipcRenderer.off('download-start', onStart);
+      ipcRenderer.off('download-progress', onProgress);
+      ipcRenderer.off('download-done', onDone);
+      ipcRenderer.off('download-error', onError);
     };
   }, []);
 
-  // ---- actions ------------------------------------------------------------
   const cancel = (id: string) => {
     electron?.ipcRenderer?.invoke('download-cancel', id);
     dispatch({ type: 'CANCEL', payload: { id } });
