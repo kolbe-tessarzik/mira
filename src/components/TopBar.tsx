@@ -35,11 +35,11 @@ function RestoreIcon() {
 
 function CloseIcon() {
   return (
-    <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true">
       <path
-        d="M2 2l6 6M8 2L2 8"
+        d="M2.2 2.2l3.6 3.6M5.8 2.2L2.2 5.8"
         stroke="currentColor"
-        strokeWidth="1.2"
+        strokeWidth="1.1"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -47,15 +47,21 @@ function CloseIcon() {
   );
 }
 
-function PlusIcon() {
+function MacZoomIcon({ isMaximized }: { isMaximized: boolean }) {
+  const triangles = isMaximized
+    ? {
+        topLeft: '2 4.5 2 2 4.5 2',
+        bottomRight: '8 5.5 8 8 5.5 8',
+      }
+    : {
+        topLeft: '1.5 3.8 1.5 1.5 3.8 1.5',
+        bottomRight: '8.5 6.2 8.5 8.5 6.2 8.5',
+      };
+
   return (
     <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-      <path
-        d="M5 1.8v6.4M1.8 5h6.4"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
+      <polygon points={triangles.topLeft} fill="currentColor" />
+      <polygon points={triangles.bottomRight} fill="currentColor" />
     </svg>
   );
 }
@@ -63,6 +69,7 @@ function PlusIcon() {
 export default function TopBar({ children }: { children?: React.ReactNode }) {
   const [isMaximized, setIsMaximized] = useState(false);
   const [isMacOS, setIsMacOS] = useState(false);
+  const [showMacSymbols, setShowMacSymbols] = useState(false);
 
   useEffect(() => {
     setIsMacOS(/Mac|iPhone|iPad|iPod/.test(navigator.platform));
@@ -115,11 +122,19 @@ export default function TopBar({ children }: { children?: React.ReactNode }) {
 
   const controlsSection = isMacOS ? (
     <div
+      onMouseEnter={() => setShowMacSymbols(true)}
+      onMouseLeave={() => setShowMacSymbols(false)}
+      onFocusCapture={() => setShowMacSymbols(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setShowMacSymbols(false);
+        }
+      }}
       style={{
         display: 'flex',
         gap: 8,
         alignItems: 'center',
-        paddingLeft: 10,
+        padding: '6px 6px 6px 10px',
         WebkitAppRegion: 'no-drag' as const,
       }}
     >
@@ -140,7 +155,9 @@ export default function TopBar({ children }: { children?: React.ReactNode }) {
           cursor: 'pointer',
         }}
       >
-        <CloseIcon />
+        <span style={{ display: 'flex', opacity: showMacSymbols ? 0.9 : 0, transition: 'opacity 120ms ease' }}>
+          <CloseIcon />
+        </span>
       </button>
       <button
         title="Minimize"
@@ -159,7 +176,9 @@ export default function TopBar({ children }: { children?: React.ReactNode }) {
           cursor: 'pointer',
         }}
       >
-        <MinimizeIcon />
+        <span style={{ display: 'flex', opacity: showMacSymbols ? 0.9 : 0, transition: 'opacity 120ms ease' }}>
+          <MinimizeIcon />
+        </span>
       </button>
       <button
         title={isMaximized ? 'Restore' : 'Maximize'}
@@ -178,7 +197,9 @@ export default function TopBar({ children }: { children?: React.ReactNode }) {
           cursor: 'pointer',
         }}
       >
-        {isMaximized ? <RestoreIcon /> : <PlusIcon />}
+        <span style={{ display: 'flex', opacity: showMacSymbols ? 0.9 : 0, transition: 'opacity 120ms ease' }}>
+          <MacZoomIcon isMaximized={isMaximized} />
+        </span>
       </button>
     </div>
   ) : (
