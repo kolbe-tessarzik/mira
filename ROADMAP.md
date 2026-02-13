@@ -32,7 +32,6 @@
 - [x] Theme JSON files
 - [x] Error pages
 - [x] Tab sleeping
-- [ ] Performance improvements
 - [x] Icons
 
 ## v0.7.0
