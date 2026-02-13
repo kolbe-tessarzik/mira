@@ -47,6 +47,19 @@ function CloseIcon() {
   );
 }
 
+function PlusIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+      <path
+        d="M5 1.8v6.4M1.8 5h6.4"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export default function TopBar({ children }: { children?: React.ReactNode }) {
   const [isMaximized, setIsMaximized] = useState(false);
   const [isMacOS, setIsMacOS] = useState(false);
@@ -100,7 +113,75 @@ export default function TopBar({ children }: { children?: React.ReactNode }) {
     </div>
   );
 
-  const controlsSection = (
+  const controlsSection = isMacOS ? (
+    <div
+      style={{
+        display: 'flex',
+        gap: 8,
+        alignItems: 'center',
+        paddingLeft: 10,
+        WebkitAppRegion: 'no-drag' as const,
+      }}
+    >
+      <button
+        title="Close"
+        onClick={onClose}
+        style={{
+          width: 12,
+          height: 12,
+          borderRadius: '50%',
+          border: '1px solid #d84a3a',
+          background: '#ff5f57',
+          color: '#7a2019',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 0,
+          cursor: 'pointer',
+        }}
+      >
+        <CloseIcon />
+      </button>
+      <button
+        title="Minimize"
+        onClick={onMinimize}
+        style={{
+          width: 12,
+          height: 12,
+          borderRadius: '50%',
+          border: '1px solid #c99b22',
+          background: '#ffbd2e',
+          color: '#6c4f06',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 0,
+          cursor: 'pointer',
+        }}
+      >
+        <MinimizeIcon />
+      </button>
+      <button
+        title={isMaximized ? 'Restore' : 'Maximize'}
+        onClick={onToggleMaximize}
+        style={{
+          width: 12,
+          height: 12,
+          borderRadius: '50%',
+          border: '1px solid #2f9f46',
+          background: '#28c840',
+          color: '#0f4a1c',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 0,
+          cursor: 'pointer',
+        }}
+      >
+        {isMaximized ? <RestoreIcon /> : <PlusIcon />}
+      </button>
+    </div>
+  ) : (
     <div style={{ display: 'flex', WebkitAppRegion: 'no-drag' as const }}>
       <button
         title="Minimize"
