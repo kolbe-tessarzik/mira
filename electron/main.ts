@@ -359,10 +359,45 @@ function setupAdBlocker() {
   });
 }
 
+function setupWindowControlsHandlers() {
+  ipcMain.handle('window-minimize', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win || win.isDestroyed()) return false;
+    win.minimize();
+    return true;
+  });
+
+  ipcMain.handle('window-maximize-toggle', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win || win.isDestroyed()) return false;
+    if (win.isMaximized()) {
+      win.unmaximize();
+    } else {
+      win.maximize();
+    }
+    return true;
+  });
+
+  ipcMain.handle('window-is-maximized', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win || win.isDestroyed()) return false;
+    return win.isMaximized();
+  });
+
+  ipcMain.handle('window-close', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win || win.isDestroyed()) return false;
+    win.close();
+    return true;
+  });
+}
+
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
+    frame: false,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       webviewTag: true,
@@ -377,6 +412,22 @@ function createWindow(): BrowserWindow {
   } else {
     win.loadFile('dist/index.html');
   }
+
+  win.setMenuBarVisibility(false);
+  win.removeMenu();
+  win.webContents.send('window-maximized-changed', win.isMaximized());
+
+  win.on('maximize', () => {
+    if (!win.isDestroyed()) {
+      win.webContents.send('window-maximized-changed', true);
+    }
+  });
+
+  win.on('unmaximize', () => {
+    if (!win.isDestroyed()) {
+      win.webContents.send('window-maximized-changed', false);
+    }
+  });
 
   win.webContents.on('before-input-event', (event, input) => {
     const key = input.key.toLowerCase();
@@ -405,6 +456,7 @@ app.whenReady().then(async () => {
   setupHistoryHandlers();
   setupWebviewTabOpenHandler();
   setupAdBlocker();
+  setupWindowControlsHandlers();
   scheduleAdBlockListRefresh();
   const win = createWindow();
   setupDownloadHandlers(win);

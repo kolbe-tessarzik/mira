@@ -35,6 +35,9 @@
 - [x] Icons
 
 ## v0.7.0
+- [ ] UI work
+
+## v0.8.0
 - [ ] Find in page (Ctrl+F)
 - [ ] Reload (Ctrl+R)
 - [ ] Fix other shortcuts
@@ -42,5 +45,6 @@
 ## v1.0.0 — Stable Release
 - [ ] Installer & portable builds for Windows, macOS, and Linux
 - [ ] Clean UI
+- [ ] Improve performance
 - [ ] Fix bugs/issues
  

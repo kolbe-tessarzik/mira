@@ -4,6 +4,7 @@ import TabsProvider from './features/tabs/TabsProvider';
 import TabBar from './features/tabs/TabBar';
 import TabView from './features/tabs/TabView';
 import AddressBar from './components/AddressBar';
+import TopBar from './components/TopBar';
 import RestoreTabsPrompt from './components/RestoreTabsPrompt';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import DownloadProvider from './features/downloads/DownloadProvider';
@@ -38,7 +39,9 @@ function Browser() {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', width: '100vw' }}>
-      <TabBar />
+      <TopBar>
+        <TabBar />
+      </TopBar>
       <AddressBar inputRef={addressInputRef} />
       <TabView />
       <RestoreTabsPrompt />
