@@ -1,4 +1,3 @@
-// src/components/DownloadButton.tsx
 import { useState } from 'react';
 import { useDownloads } from '../features/downloads/DownloadProvider';
 import DownloadPopup from './DownloadPopup';
@@ -7,7 +6,6 @@ export default function DownloadButton() {
   const { downloads } = useDownloads();
   const [show, setShow] = useState(false);
 
-  // Count only unfinished items for the badge
   const pendingCount = downloads.filter(
     (d) => d.status !== 'completed' && d.status !== 'canceled' && d.status !== 'error',
   ).length;
@@ -17,27 +15,30 @@ export default function DownloadButton() {
       <button
         onClick={() => setShow((prev) => !prev)}
         title="Downloads"
+        className="theme-btn theme-btn-download"
         style={{
-          background: 'transparent',
-          border: 'none',
-          color: '#fff',
-          cursor: 'pointer',
-          fontSize: 18,
-          marginLeft: 8,
+          padding: '4px 10px',
+          fontSize: 15,
+          marginLeft: 4,
         }}
       >
-        ⬇️
+        DL
         {pendingCount > 0 && (
           <span
             style={{
               position: 'absolute',
               top: -4,
               right: -4,
-              background: '#e53935',
-              borderRadius: '50%',
-              padding: '2px 6px',
+              background: 'var(--downloadButtonBgActive)',
+              border: '1px solid var(--downloadButtonBorderActive)',
+              borderRadius: 999,
+              minWidth: 18,
+              height: 18,
+              lineHeight: '16px',
+              textAlign: 'center',
               fontSize: 10,
-              color: '#fff',
+              color: 'var(--downloadButtonTextActive)',
+              padding: '0 3px',
             }}
           >
             {pendingCount}

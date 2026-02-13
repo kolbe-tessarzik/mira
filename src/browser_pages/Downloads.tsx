@@ -28,7 +28,7 @@ export default function Downloads() {
   const items = [...downloads].sort((a, b) => b.startedAt - a.startedAt);
 
   return (
-    <div style={{ padding: 20 }}>
+    <div style={{ padding: 20, background: 'var(--bg)', color: 'var(--text1)', minHeight: '100%' }}>
       <h2 style={{ marginTop: 0 }}>Downloads</h2>
       {items.length === 0 && <div>No downloads yet.</div>}
 
@@ -47,13 +47,11 @@ export default function Downloads() {
         return (
           <div
             key={`${d.id}-${d.startedAt}`}
+            className="theme-panel"
             style={{
-              border: '1px solid #444',
               borderRadius: 8,
               padding: 12,
               marginBottom: 10,
-              background: '#202225',
-              color: '#f5f5f5',
             }}
           >
             <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, wordBreak: 'break-all' }}>
@@ -61,7 +59,8 @@ export default function Downloads() {
             </div>
 
             <div
-              style={{ fontSize: 12, color: '#c6c6c6', marginBottom: 8, wordBreak: 'break-all' }}
+              style={{ fontSize: 12, marginBottom: 8, wordBreak: 'break-all' }}
+              className="theme-text2"
             >
               {d.url}
             </div>
@@ -75,42 +74,42 @@ export default function Downloads() {
                 marginBottom: 8,
               }}
             >
-              <div style={{ color: '#9aa0a6' }}>Status</div>
+              <div className="theme-text3">Status</div>
               <div>{d.status}</div>
 
-              <div style={{ color: '#9aa0a6' }}>Source</div>
+              <div className="theme-text3">Source</div>
               <div>{sourceHost}</div>
 
-              <div style={{ color: '#9aa0a6' }}>Progress</div>
+              <div className="theme-text3">Progress</div>
               <div>
                 {formatBytes(d.receivedBytes)} /{' '}
                 {d.totalBytes > 0 ? formatBytes(d.totalBytes) : 'Unknown size'} (
                 {d.totalBytes > 0 ? `${progress.toFixed(1)}%` : '-'})
               </div>
 
-              <div style={{ color: '#9aa0a6' }}>Started</div>
+              <div className="theme-text3">Started</div>
               <div>{formatTime(d.startedAt)}</div>
 
-              <div style={{ color: '#9aa0a6' }}>Finished</div>
+              <div className="theme-text3">Finished</div>
               <div>{formatTime(d.endedAt)}</div>
 
-              <div style={{ color: '#9aa0a6' }}>Duration</div>
+              <div className="theme-text3">Duration</div>
               <div>{formatDuration(d.startedAt, d.endedAt)}</div>
 
-              <div style={{ color: '#9aa0a6' }}>Download ID</div>
+              <div className="theme-text3">Download ID</div>
               <div style={{ wordBreak: 'break-all' }}>{d.id}</div>
 
               {d.savePath && (
                 <>
-                  <div style={{ color: '#9aa0a6' }}>Saved to</div>
+                  <div className="theme-text3">Saved to</div>
                   <div style={{ wordBreak: 'break-all' }}>{d.savePath}</div>
                 </>
               )}
 
               {d.error && (
                 <>
-                  <div style={{ color: '#ff8b8b' }}>Error</div>
-                  <div style={{ color: '#ff8b8b' }}>{d.error}</div>
+                  <div className="theme-text3">Error</div>
+                  <div className="theme-text3">{d.error}</div>
                 </>
               )}
             </div>
@@ -118,9 +117,20 @@ export default function Downloads() {
             {isActive && (
               <div style={{ marginBottom: 10 }}>
                 <div
-                  style={{ height: 6, background: '#444', borderRadius: 999, overflow: 'hidden' }}
+                  style={{
+                    height: 6,
+                    background: 'var(--tabBorder)',
+                    borderRadius: 999,
+                    overflow: 'hidden',
+                  }}
                 >
-                  <div style={{ width: `${progress}%`, height: '100%', background: '#3aa675' }} />
+                  <div
+                    style={{
+                      width: `${progress}%`,
+                      height: '100%',
+                      background: 'var(--downloadButtonBg)',
+                    }}
+                  />
                 </div>
               </div>
             )}
@@ -129,10 +139,9 @@ export default function Downloads() {
               {d.status === 'completed' && d.savePath && (
                 <button
                   onClick={() => openFolder(d.savePath!)}
+                  className="theme-btn theme-btn-download"
                   style={{
-                    border: '1px solid #3aa675',
-                    background: 'transparent',
-                    color: '#3aa675',
+                    padding: '4px 8px',
                   }}
                 >
                   Show in folder
@@ -142,10 +151,9 @@ export default function Downloads() {
               {isActive && (
                 <button
                   onClick={() => cancel(d.id)}
+                  className="theme-btn theme-btn-nav"
                   style={{
-                    border: '1px solid #d9534f',
-                    background: 'transparent',
-                    color: '#d9534f',
+                    padding: '4px 8px',
                   }}
                 >
                   Cancel

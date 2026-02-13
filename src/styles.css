@@ -4,7 +4,196 @@ body {
   padding: 0;
 }
 
+:root {
+  --bg: #12161d;
+  --tabBg: #1a2029;
+  --tabBgHover: #222b37;
+  --tabBgActive: #2c3745;
+  --tabText: #e8edf5;
+  --tabTextHover: #f2f6fc;
+  --tabTextActive: #ffffff;
+  --tabBorder: #2b3442;
+  --tabBorderHover: #3a4556;
+  --tabBorderActive: #4a576b;
+  --text1: #e8edf5;
+  --text2: #b6c0cf;
+  --text3: #8793a6;
+  --goButtonBg: #253042;
+  --goButtonBgHover: #304059;
+  --goButtonBgActive: #3c5070;
+  --goButtonText: #f4f8ff;
+  --goButtonTextHover: #ffffff;
+  --goButtonTextActive: #ffffff;
+  --goButtonBorder: #3f5169;
+  --goButtonBorderHover: #526a89;
+  --goButtonBorderActive: #6785aa;
+  --downloadButtonBg: #26362f;
+  --downloadButtonBgHover: #30463d;
+  --downloadButtonBgActive: #3a594d;
+  --downloadButtonText: #e9f6ef;
+  --downloadButtonTextHover: #f4fff8;
+  --downloadButtonTextActive: #ffffff;
+  --downloadButtonBorder: #3b5a4d;
+  --downloadButtonBorderHover: #4f7664;
+  --downloadButtonBorderActive: #64957d;
+  --navButtonBg: #1f2b3b;
+  --navButtonBgHover: #293a50;
+  --navButtonBgActive: #345070;
+  --navButtonText: #eaf2ff;
+  --navButtonTextHover: #f4f8ff;
+  --navButtonTextActive: #ffffff;
+  --navButtonBorder: #384c66;
+  --navButtonBorderHover: #4d6789;
+  --navButtonBorderActive: #6384ae;
+  --urlBarBg: #0f141b;
+  --urlBarBgHover: #141b24;
+  --urlBarBgActive: #19222e;
+  --urlBarText: #eef3fb;
+  --urlBarTextPlaceholder: #7f8ba0;
+  --urlBarBorder: #2e3b4e;
+  --urlBarBorderHover: #43536a;
+  --urlBarBorderActive: #5a6f8d;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text1);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
 #root {
   height: 100vh;
   width: 100vw;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.theme-text1 {
+  color: var(--text1);
+}
+
+.theme-text2 {
+  color: var(--text2);
+}
+
+.theme-text3 {
+  color: var(--text3);
+}
+
+.theme-panel {
+  background: var(--tabBg);
+  border: 1px solid var(--tabBorder);
+  color: var(--text1);
+}
+
+.theme-input {
+  background: var(--urlBarBg);
+  border: 1px solid var(--urlBarBorder);
+  color: var(--urlBarText);
+  border-radius: 6px;
+}
+
+.theme-input::placeholder {
+  color: var(--urlBarTextPlaceholder);
+}
+
+.theme-input:hover {
+  background: var(--urlBarBgHover);
+  border-color: var(--urlBarBorderHover);
+}
+
+.theme-input:focus {
+  background: var(--urlBarBgActive);
+  border-color: var(--urlBarBorderActive);
+  outline: none;
+}
+
+.theme-btn {
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.theme-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.theme-btn-nav {
+  background: var(--navButtonBg);
+  border: 1px solid var(--navButtonBorder);
+  color: var(--navButtonText);
+}
+
+.theme-btn-nav:hover:not(:disabled) {
+  background: var(--navButtonBgHover);
+  border-color: var(--navButtonBorderHover);
+  color: var(--navButtonTextHover);
+}
+
+.theme-btn-nav:active:not(:disabled) {
+  background: var(--navButtonBgActive);
+  border-color: var(--navButtonBorderActive);
+  color: var(--navButtonTextActive);
+}
+
+.theme-btn-go {
+  background: var(--goButtonBg);
+  border: 1px solid var(--goButtonBorder);
+  color: var(--goButtonText);
+}
+
+.theme-btn-go:hover:not(:disabled) {
+  background: var(--goButtonBgHover);
+  border-color: var(--goButtonBorderHover);
+  color: var(--goButtonTextHover);
+}
+
+.theme-btn-go:active:not(:disabled) {
+  background: var(--goButtonBgActive);
+  border-color: var(--goButtonBorderActive);
+  color: var(--goButtonTextActive);
+}
+
+.theme-btn-download {
+  background: var(--downloadButtonBg);
+  border: 1px solid var(--downloadButtonBorder);
+  color: var(--downloadButtonText);
+}
+
+.theme-btn-download:hover:not(:disabled) {
+  background: var(--downloadButtonBgHover);
+  border-color: var(--downloadButtonBorderHover);
+  color: var(--downloadButtonTextHover);
+}
+
+.theme-btn-download:active:not(:disabled) {
+  background: var(--downloadButtonBgActive);
+  border-color: var(--downloadButtonBorderActive);
+  color: var(--downloadButtonTextActive);
+}
+
+.theme-tab {
+  background: var(--tabBg);
+  border: 1px solid var(--tabBorder);
+  color: var(--tabText);
+}
+
+.theme-tab:hover {
+  background: var(--tabBgHover);
+  border-color: var(--tabBorderHover);
+  color: var(--tabTextHover);
+}
+
+.theme-tab:active {
+  background: var(--tabBgActive);
+  border-color: var(--tabBorderActive);
+  color: var(--tabTextActive);
+}
+
+.theme-tab-selected {
+  background: var(--tabBgHover);
+  border-color: var(--tabBorderHover);
+  color: var(--tabTextHover);
 }

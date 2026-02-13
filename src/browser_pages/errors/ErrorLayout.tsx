@@ -16,28 +16,24 @@ export default function ErrorLayout({ title, subtitle, description, onReload }: 
         alignItems: 'center',
         justifyContent: 'center',
         textAlign: 'center',
-        background: 'var(--bg, #111)',
-        color: 'var(--fg, #fff)',
+        background: 'var(--bg)',
+        color: 'var(--text1)',
         padding: 24,
         boxSizing: 'border-box',
       }}
     >
       <h1 style={{ margin: 0, fontSize: 48, lineHeight: 1.1 }}>{title}</h1>
       <h2 style={{ margin: '10px 0 0 0', fontSize: 24, fontWeight: 600 }}>{subtitle}</h2>
-      <p style={{ margin: '12px 0 0 0', fontSize: 15, color: 'var(--muted-fg, #b9b9b9)' }}>
+      <p style={{ margin: '12px 0 0 0', fontSize: 15, color: 'var(--text2)' }}>
         {description}
       </p>
       <button
         type="button"
         onClick={onReload}
+        className="theme-btn theme-btn-go"
         style={{
           marginTop: 18,
           padding: '8px 14px',
-          borderRadius: 6,
-          border: '1px solid #3b7cff',
-          background: '#3b7cff',
-          color: '#fff',
-          cursor: 'pointer',
           fontSize: 14,
         }}
       >

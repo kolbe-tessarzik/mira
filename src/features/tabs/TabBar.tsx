@@ -4,18 +4,27 @@ export default function TabBar() {
   const { tabs, activeId, setActive, closeTab, newTab } = useTabs();
 
   return (
-    <div style={{ display: 'flex', background: '#222' }}>
+    <div
+      style={{
+        display: 'flex',
+        gap: 6,
+        padding: 6,
+        background: 'var(--bg)',
+        borderBottom: '1px solid var(--tabBorder)',
+      }}
+    >
       {tabs.map((tab) => (
         <div
           key={tab.id}
           onClick={() => setActive(tab.id)}
+          className={`theme-tab ${tab.id === activeId ? 'theme-tab-selected' : ''}`}
           style={{
             padding: '6px 10px',
             cursor: 'pointer',
-            background: tab.id === activeId ? '#333' : '#222',
-            color: 'white',
+            borderRadius: 6,
             display: 'flex',
             gap: 6,
+            alignItems: 'center',
           }}
         >
           <span>Tab</span>
@@ -29,13 +38,20 @@ export default function TabBar() {
               e.stopPropagation();
               closeTab(tab.id);
             }}
+            style={{ opacity: 0.8 }}
           >
             x
           </span>
         </div>
       ))}
 
-      <button onClick={() => newTab()}>+</button>
+      <button
+        onClick={() => newTab()}
+        className="theme-btn theme-btn-nav"
+        style={{ padding: '6px 10px', minWidth: 34 }}
+      >
+        +
+      </button>
     </div>
   );
 }

@@ -74,33 +74,34 @@ export default function History() {
   }, [items]);
 
   return (
-    <div style={{ padding: 20 }}>
+    <div style={{ padding: 20, background: 'var(--bg)', color: 'var(--text1)', minHeight: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ marginTop: 0, marginBottom: 12 }}>History</h2>
       </div>
 
       {loading && <div>Loading history...</div>}
       {!loading && items.length === 0 && (
-        <div style={{ color: '#bbb' }}>No history yet. Entries are kept for 7 days.</div>
+        <div className="theme-text2">No history yet. Entries are kept for 7 days.</div>
       )}
 
       {sections.map((section) => (
         <section key={section.dayKey} style={{ marginBottom: 20 }}>
-          <h3 style={{ margin: '8px 0', color: '#ddd', fontSize: 14 }}>{section.heading}</h3>
-          <div style={{ border: '1px solid #3b3b3b', borderRadius: 8, overflow: 'hidden' }}>
+          <h3 style={{ margin: '8px 0', fontSize: 14 }} className="theme-text2">
+            {section.heading}
+          </h3>
+          <div className="theme-panel" style={{ borderRadius: 8, overflow: 'hidden' }}>
             {section.entries.map((entry) => (
               <button
                 key={entry.id}
                 onClick={() => navigate(entry.url)}
+                className="theme-btn theme-btn-nav"
                 style={{
                   width: '100%',
                   textAlign: 'left',
-                  border: 'none',
-                  borderBottom: '1px solid #2f2f2f',
-                  background: '#202225',
-                  color: '#f2f2f2',
+                  borderRadius: 0,
+                  borderWidth: 0,
+                  borderBottom: '1px solid var(--tabBorder)',
                   padding: '10px 12px',
-                  cursor: 'pointer',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
@@ -108,11 +109,11 @@ export default function History() {
                     <div style={{ fontSize: 13, fontWeight: 600, wordBreak: 'break-all' }}>
                       {entry.title}
                     </div>
-                    <div style={{ fontSize: 12, color: '#aeb4ba', wordBreak: 'break-all' }}>
+                    <div style={{ fontSize: 12, wordBreak: 'break-all' }} className="theme-text2">
                       {entry.url}
                     </div>
                   </div>
-                  <div style={{ fontSize: 12, color: '#9aa0a6', flexShrink: 0 }}>
+                  <div style={{ fontSize: 12, flexShrink: 0 }} className="theme-text3">
                     {formatTime(entry.visitedAt)}
                   </div>
                 </div>

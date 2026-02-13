@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTabs } from '../features/tabs/TabsProvider';
 import DownloadButton from './DownloadButton';
 import { getBrowserSettings } from '../features/settings/browserSettings';
@@ -9,7 +9,6 @@ type AddressBarProps = {
 
 export default function AddressBar({ inputRef }: AddressBarProps) {
   const { tabs, activeId, navigate, goBack, goForward, reload } = useTabs();
-
   const [input, setInput] = useState('');
 
   useEffect(() => {
@@ -37,7 +36,6 @@ export default function AddressBar({ inputRef }: AddressBarProps) {
     if (!raw) return;
 
     let finalUrl: string;
-
     if (isSupportedProtocol(raw)) {
       finalUrl = raw;
     } else if (raw.includes('.')) {
@@ -49,7 +47,6 @@ export default function AddressBar({ inputRef }: AddressBarProps) {
 
     navigate(finalUrl);
   };
-  // ---------------------------------------------------------------------------
 
   const activeTab = tabs.find((t) => t.id === activeId);
   const canGoBack = activeTab && activeTab.historyIndex > 0;
@@ -60,78 +57,65 @@ export default function AddressBar({ inputRef }: AddressBarProps) {
       style={{
         display: 'flex',
         alignItems: 'center',
-        padding: 4,
-        background: 'var(--address-bar-bg, #222)',
+        padding: 6,
+        gap: 4,
+        background: 'var(--bg)',
       }}
     >
-      {/* ← Back */}
       <button
         onClick={goBack}
         disabled={!canGoBack}
         title="Back"
-        style={{
-          marginRight: 4,
-          padding: '4px 8px',
-          cursor: canGoBack ? 'pointer' : 'default',
-        }}
+        className="theme-btn theme-btn-nav"
+        style={{ padding: '4px 8px' }}
       >
-        ◀︎
+        {'<'}
       </button>
 
-      {/* → Forward */}
       <button
         onClick={goForward}
         disabled={!canGoForward}
         title="Forward"
-        style={{
-          marginRight: 4,
-          padding: '4px 8px',
-          cursor: canGoForward ? 'pointer' : 'default',
-        }}
+        className="theme-btn theme-btn-nav"
+        style={{ padding: '4px 8px' }}
       >
-        ▶︎
+        {'>'}
       </button>
 
-      {/* ↻ Refresh */}
-      <button onClick={reload} title="Refresh" style={{ marginRight: 4, padding: '4px 8px' }}>
-        ⟳
+      <button
+        onClick={reload}
+        title="Refresh"
+        className="theme-btn theme-btn-nav"
+        style={{ padding: '4px 8px' }}
+      >
+        R
       </button>
 
-      {/* URL input */}
       <input
         ref={inputRef}
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && go()}
         placeholder="Enter URL"
+        className="theme-input"
         style={{
           flex: 1,
           padding: '6px 10px',
           fontSize: 16,
-          borderRadius: 4,
-          border: '1px solid #555',
-          outline: 'none',
-          background: 'var(--input-bg, #333)',
-          color: 'var(--input-fg, #fff)',
         }}
       />
 
-      {/* Go button */}
       <button
         onClick={go}
+        className="theme-btn theme-btn-go"
         style={{
-          marginLeft: 4,
           padding: '6px 12px',
           fontSize: 16,
-          borderRadius: 4,
-          border: '1px solid #555',
-          background: '#4285F4',
-          color: '#fff',
-          cursor: 'pointer',
         }}
       >
         Go
       </button>
+
       <DownloadButton />
     </div>
   );

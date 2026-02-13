@@ -130,7 +130,15 @@ export default function Settings() {
   const selectedTheme = themes.find((entry) => entry.id === themeId) ?? themes[0] ?? null;
 
   return (
-    <div style={{ padding: 20, maxWidth: 720, background: 'var(--bg)' }}>
+    <div
+      style={{
+        padding: 20,
+        maxWidth: 720,
+        background: 'var(--bg)',
+        color: 'var(--text1)',
+        minHeight: '100%',
+      }}
+    >
       <h1 style={{ marginTop: 0 }}>Settings</h1>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -146,12 +154,9 @@ export default function Settings() {
             setSaveStatus('saving');
           }}
           placeholder={DEFAULT_BROWSER_SETTINGS.newTabPage}
+          className="theme-input"
           style={{
             padding: '8px 10px',
-            borderRadius: 6,
-            border: '1px solid #555',
-            background: '#1f1f1f',
-            color: '#fff',
           }}
         />
       </div>
@@ -173,13 +178,10 @@ export default function Settings() {
               setTabSleepValue(Math.max(1, Math.floor(nextValue)));
               setSaveStatus('saving');
             }}
+            className="theme-input"
             style={{
               width: 120,
               padding: '8px 10px',
-              borderRadius: 6,
-              border: '1px solid #555',
-              background: '#1f1f1f',
-              color: '#fff',
             }}
           />
           <select
@@ -192,12 +194,9 @@ export default function Settings() {
               }
               setSaveStatus('saving');
             }}
+            className="theme-input"
             style={{
               padding: '8px 10px',
-              borderRadius: 6,
-              border: '1px solid #555',
-              background: '#1f1f1f',
-              color: '#fff',
             }}
           >
             <option value="seconds">Seconds</option>
@@ -216,12 +215,9 @@ export default function Settings() {
               }
               setSaveStatus('saving');
             }}
+            className="theme-input"
             style={{
               padding: '8px 10px',
-              borderRadius: 6,
-              border: '1px solid #555',
-              background: '#1f1f1f',
-              color: '#fff',
             }}
           >
             <option value="freeze">Freeze (keep page state)</option>
@@ -260,15 +256,11 @@ export default function Settings() {
             id="theme-dropdown-button"
             type="button"
             onClick={() => setThemeDropdownOpen((open) => !open)}
+            className="theme-btn theme-btn-nav"
             style={{
               width: '100%',
               textAlign: 'left',
               padding: '8px 10px',
-              borderRadius: 6,
-              border: '1px solid #555',
-              background: '#1f1f1f',
-              color: '#fff',
-              cursor: 'pointer',
             }}
           >
             {selectedTheme
@@ -278,11 +270,10 @@ export default function Settings() {
 
           {themeDropdownOpen && (
             <div
+              className="theme-panel"
               style={{
                 marginTop: 6,
-                border: '1px solid #555',
                 borderRadius: 6,
-                background: '#1a1a1a',
                 overflow: 'hidden',
               }}
             >
@@ -294,7 +285,7 @@ export default function Settings() {
                     alignItems: 'center',
                     gap: 8,
                     padding: 6,
-                    borderBottom: '1px solid #2d2d2d',
+                    borderBottom: '1px solid var(--tabBorder)',
                   }}
                 >
                   <button
@@ -303,15 +294,11 @@ export default function Settings() {
                       handleThemeChange(entry.id);
                       setThemeDropdownOpen(false);
                     }}
+                    className={`theme-btn ${entry.id === themeId ? 'theme-btn-go' : 'theme-btn-nav'}`}
                     style={{
                       flex: 1,
                       textAlign: 'left',
                       padding: '6px 8px',
-                      borderRadius: 4,
-                      border: entry.id === themeId ? '1px solid #3b7cff' : '1px solid #3d3d3d',
-                      background: entry.id === themeId ? '#1f2f4f' : '#242424',
-                      color: '#fff',
-                      cursor: 'pointer',
                     }}
                   >
                     {entry.theme.name} - {entry.theme.author}
@@ -321,13 +308,9 @@ export default function Settings() {
                     <button
                       type="button"
                       onClick={() => handleDeleteTheme(entry.id)}
+                      className="theme-btn theme-btn-nav"
                       style={{
                         padding: '6px 10px',
-                        borderRadius: 4,
-                        border: '1px solid #7a3b3b',
-                        background: '#3b1f1f',
-                        color: '#fff',
-                        cursor: 'pointer',
                       }}
                     >
                       Delete
@@ -342,6 +325,7 @@ export default function Settings() {
           <button
             onClick={() => fileInputRef.current?.click()}
             type="button"
+            className="theme-btn theme-btn-nav"
             style={{ padding: '8px 12px' }}
           >
             Add Theme JSON
@@ -354,15 +338,27 @@ export default function Settings() {
             style={{ display: 'none' }}
           />
         </div>
-        {!!importMessage && <div style={{ color: '#aaa', fontSize: 13 }}>{importMessage}</div>}
+        {!!importMessage && (
+          <div className="theme-text2" style={{ fontSize: 13 }}>
+            {importMessage}
+          </div>
+        )}
       </div>
 
       <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-        <button onClick={handleReset} style={{ padding: '8px 12px' }}>
+        <button onClick={handleReset} className="theme-btn theme-btn-nav" style={{ padding: '8px 12px' }}>
           Reset to Default
         </button>
-        {saveStatus === 'saving' && <div style={{ alignSelf: 'center', color: '#f5c06a' }}>Saving...</div>}
-        {saveStatus === 'saved' && <div style={{ alignSelf: 'center', color: '#67d86f' }}>Saved</div>}
+        {saveStatus === 'saving' && (
+          <div className="theme-text2" style={{ alignSelf: 'center' }}>
+            Saving...
+          </div>
+        )}
+        {saveStatus === 'saved' && (
+          <div className="theme-text2" style={{ alignSelf: 'center' }}>
+            Saved
+          </div>
+        )}
       </div>
     </div>
   );

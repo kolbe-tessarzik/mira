@@ -11,7 +11,7 @@ export default function RestoreTabsPrompt() {
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0,0,0,0.45)',
+        background: 'color-mix(in srgb, var(--bg) 70%, transparent)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -19,44 +19,35 @@ export default function RestoreTabsPrompt() {
       }}
     >
       <div
+        className="theme-panel"
         style={{
           width: 420,
           maxWidth: 'calc(100vw - 32px)',
-          background: '#1e1f22',
-          color: '#f0f0f0',
-          border: '1px solid #3a3a3a',
           borderRadius: 10,
           padding: 16,
-          boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
         }}
       >
-        <h3 style={{ margin: '0 0 8px 0' }}>Restore Previous Session?</h3>
-        <p style={{ margin: '0 0 14px 0', color: '#c7c7c7', fontSize: 13, lineHeight: 1.4 }}>
+        <h3 style={{ margin: '0 0 8px 0' }} className="theme-text1">
+          Restore Previous Session?
+        </h3>
+        <p style={{ margin: '0 0 14px 0', fontSize: 13, lineHeight: 1.4 }} className="theme-text2">
           Mira found {restoreTabCount} tab{restoreTabCount === 1 ? '' : 's'} from your last session.
         </p>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
           <button
             onClick={discardPreviousSession}
+            className="theme-btn theme-btn-nav"
             style={{
-              border: '1px solid #5d5d5d',
-              background: 'transparent',
-              color: '#f0f0f0',
-              borderRadius: 6,
               padding: '7px 12px',
-              cursor: 'pointer',
             }}
           >
             Start Fresh
           </button>
           <button
             onClick={restorePreviousSession}
+            className="theme-btn theme-btn-go"
             style={{
-              border: '1px solid #3b7cff',
-              background: '#3b7cff',
-              color: '#fff',
-              borderRadius: 6,
               padding: '7px 12px',
-              cursor: 'pointer',
             }}
           >
             Restore Tabs

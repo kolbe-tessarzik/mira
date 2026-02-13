@@ -23,8 +23,8 @@ export default function NewTab() {
         height: '100%',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'var(--bg, #111)',
-        color: 'var(--fg, #fff)',
+        background: 'var(--bg)',
+        color: 'var(--text1)',
       }}
     >
       <form onSubmit={handleSearch} style={{ display: 'flex', width: '60%', maxWidth: 600 }}>
@@ -38,20 +38,16 @@ export default function NewTab() {
             padding: '10px 15px',
             fontSize: 18,
             borderRadius: '6px 0 0 6px',
-            border: '1px solid #ccc',
-            outline: 'none',
           }}
+          className="theme-input"
         />
         <button
           type="submit"
+          className="theme-btn theme-btn-go"
           style={{
             padding: '10px 20px',
             fontSize: 18,
             borderRadius: '0 6px 6px 0',
-            border: '1px solid #ccc',
-            background: '#4285F4',
-            color: '#fff',
-            cursor: 'pointer',
           }}
         >
           Search
