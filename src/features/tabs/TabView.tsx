@@ -108,11 +108,11 @@ export default function TabView() {
                   }
                   const didNavigateHandler = (e: Event) => {
                     const ev = e as WebviewNavigationEvent;
-                    navigate(ev.url);
+                    navigate(ev.url, tab.id);
                   };
                   const didNavigateInPageHandler = (e: Event) => {
                     const ev = e as WebviewNavigationEvent;
-                    navigate(ev.url);
+                    navigate(ev.url, tab.id);
                   };
 
                   wv.didNavigateHandler = didNavigateHandler as (e: WebviewNavigationEvent) => void;

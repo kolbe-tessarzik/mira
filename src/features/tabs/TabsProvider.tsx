@@ -27,7 +27,7 @@ type TabsContextType = {
   activeId: string;
   newTab: (url?: string) => void;
   closeTab: (id: string) => void;
-  navigate: (url: string) => void;
+  navigate: (url: string, tabId?: string) => void;
   goBack: () => void;
   goForward: () => void;
   reload: () => void;
@@ -262,7 +262,8 @@ export default function TabsProvider({ children }: { children: React.ReactNode }
     [activeId],
   );
 
-  const navigate = (url: string) => {
+  const navigate = (url: string, tabId?: string) => {
+    const targetTabId = tabId ?? activeId;
     const normalized = url.trim();
     if (normalized && !normalized.startsWith('mira://')) {
       addHistoryEntry(normalized, normalized).catch(() => undefined);
@@ -270,7 +271,7 @@ export default function TabsProvider({ children }: { children: React.ReactNode }
 
     setTabs((t) =>
       t.map((tab) => {
-        if (tab.id !== activeId) return tab;
+        if (tab.id !== targetTabId) return tab;
 
         const currentUrl = tab.history[tab.historyIndex];
         if (currentUrl === normalized) {
