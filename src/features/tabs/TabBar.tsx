@@ -21,14 +21,25 @@ export default function TabBar() {
           onClick={() => setActive(tab.id)}
           className={`theme-tab ${tab.id === activeId ? 'theme-tab-selected' : ''}`}
           style={{
-            padding: '5px 10px',
+            padding: '6px 10px',
             cursor: 'pointer',
-            borderRadius: 6,
+            borderRadius: tab.id === activeId ? '8px 8px 0 0' : '8px',
             display: 'flex',
             gap: 6,
             alignItems: 'center',
             whiteSpace: 'nowrap',
             flexShrink: 0,
+            position: 'relative',
+            zIndex: tab.id === activeId ? 2 : 1,
+            marginBottom: tab.id === activeId ? -1 : 1,
+            background:
+              tab.id === activeId
+                ? 'var(--surfaceBgHover, var(--tabBgHover))'
+                : undefined,
+            borderBottomColor:
+              tab.id === activeId
+                ? 'var(--surfaceBgHover, var(--tabBgHover))'
+                : undefined,
           }}
         >
           <span>Tab</span>

@@ -3,6 +3,51 @@ import { useTabs } from '../features/tabs/TabsProvider';
 import DownloadButton from './DownloadButton';
 import { getBrowserSettings } from '../features/settings/browserSettings';
 
+function ReloadIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+      <path
+        d="M13 3v4H9M3 13v-4h4M4.2 6.1A5 5 0 0 1 13 7M12 9a5 5 0 0 1-8.8 2.9"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function BackIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+      <path
+        d="M10.5 3.5L5.5 8l5 4.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ForwardIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+      <path
+        d="M5.5 3.5L10.5 8l-5 4.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 type AddressBarProps = {
   inputRef?: React.RefObject<HTMLInputElement | null>;
 };
@@ -59,7 +104,8 @@ export default function AddressBar({ inputRef }: AddressBarProps) {
         alignItems: 'center',
         padding: 6,
         gap: 4,
-        background: 'var(--bg)',
+        background: 'var(--surfaceBgHover, var(--tabBgHover))',
+        borderTop: '1px solid var(--surfaceBorder, var(--tabBorder))',
       }}
     >
       <button
@@ -67,9 +113,9 @@ export default function AddressBar({ inputRef }: AddressBarProps) {
         disabled={!canGoBack}
         title="Back"
         className="theme-btn theme-btn-nav"
-        style={{ padding: '4px 8px' }}
+        style={{ padding: '4px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
-        {'<'}
+        <BackIcon />
       </button>
 
       <button
@@ -77,18 +123,18 @@ export default function AddressBar({ inputRef }: AddressBarProps) {
         disabled={!canGoForward}
         title="Forward"
         className="theme-btn theme-btn-nav"
-        style={{ padding: '4px 8px' }}
+        style={{ padding: '4px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
-        {'>'}
+        <ForwardIcon />
       </button>
 
       <button
         onClick={reload}
         title="Refresh"
         className="theme-btn theme-btn-nav"
-        style={{ padding: '4px 8px' }}
+        style={{ padding: '4px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
-        R
+        <ReloadIcon />
       </button>
 
       <input

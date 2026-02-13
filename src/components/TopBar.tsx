@@ -49,8 +49,11 @@ function CloseIcon() {
 
 export default function TopBar({ children }: { children?: React.ReactNode }) {
   const [isMaximized, setIsMaximized] = useState(false);
+  const [isMacOS, setIsMacOS] = useState(false);
 
   useEffect(() => {
+    setIsMacOS(/Mac|iPhone|iPad|iPod/.test(navigator.platform));
+
     electron?.ipcRenderer
       .invoke<boolean>('window-is-maximized')
       .then((value) => setIsMaximized(!!value))
@@ -78,6 +81,75 @@ export default function TopBar({ children }: { children?: React.ReactNode }) {
     electron?.ipcRenderer.invoke('window-close').catch(() => undefined);
   };
 
+  const brandSection = (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        paddingLeft: isMacOS ? 0 : 10,
+        paddingRight: isMacOS ? 10 : 0,
+      }}
+    >
+      <img src={appIcon} alt="Mira" style={{ width: 16, height: 16 }} />
+      <img
+        src={appWordmark}
+        alt="Mira"
+        style={{ height: 25, width: 'auto', marginLeft: -6, transform: 'translateY(1px)' }}
+      />
+    </div>
+  );
+
+  const controlsSection = (
+    <div style={{ display: 'flex', WebkitAppRegion: 'no-drag' as const }}>
+      <button
+        title="Minimize"
+        onClick={onMinimize}
+        className="theme-btn theme-btn-nav"
+        style={{
+          width: 44,
+          height: 38,
+          borderRadius: 0,
+          borderTop: 'none',
+          borderBottom: 'none',
+          borderRight: 'none',
+        }}
+      >
+        <MinimizeIcon />
+      </button>
+      <button
+        title={isMaximized ? 'Restore' : 'Maximize'}
+        onClick={onToggleMaximize}
+        className="theme-btn theme-btn-nav"
+        style={{
+          width: 44,
+          height: 38,
+          borderRadius: 0,
+          borderTop: 'none',
+          borderBottom: 'none',
+          borderRight: 'none',
+        }}
+      >
+        {isMaximized ? <RestoreIcon /> : <MaximizeIcon />}
+      </button>
+      <button
+        title="Close"
+        onClick={onClose}
+        className="theme-btn theme-btn-nav"
+        style={{
+          width: 48,
+          height: 38,
+          borderRadius: 0,
+          borderTop: 'none',
+          borderBottom: 'none',
+          borderRight: 'none',
+        }}
+      >
+        <CloseIcon />
+      </button>
+    </div>
+  );
+
   return (
     <div
       onDoubleClick={onToggleMaximize}
@@ -87,26 +159,11 @@ export default function TopBar({ children }: { children?: React.ReactNode }) {
         alignItems: 'center',
         justifyContent: 'space-between',
         background: 'var(--surfaceBg, var(--tabBg))',
-        borderBottom: '1px solid var(--surfaceBorder, var(--tabBorder))',
         WebkitAppRegion: 'drag',
         userSelect: 'none',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          paddingLeft: 10,
-        }}
-      >
-        <img src={appIcon} alt="Mira" style={{ width: 16, height: 16 }} />
-        <img
-          src={appWordmark}
-          alt="Mira"
-          style={{ height: 25, width: 'auto', marginLeft: -6, transform: 'translateY(1px)' }}
-        />
-      </div>
+      {isMacOS ? controlsSection : brandSection}
 
       <div
         style={{
@@ -123,53 +180,7 @@ export default function TopBar({ children }: { children?: React.ReactNode }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', WebkitAppRegion: 'no-drag' as const }}>
-        <button
-          title="Minimize"
-          onClick={onMinimize}
-          className="theme-btn theme-btn-nav"
-          style={{
-            width: 44,
-            height: 38,
-            borderRadius: 0,
-            borderTop: 'none',
-            borderBottom: 'none',
-            borderRight: 'none',
-          }}
-        >
-          <MinimizeIcon />
-        </button>
-        <button
-          title={isMaximized ? 'Restore' : 'Maximize'}
-          onClick={onToggleMaximize}
-          className="theme-btn theme-btn-nav"
-          style={{
-            width: 44,
-            height: 38,
-            borderRadius: 0,
-            borderTop: 'none',
-            borderBottom: 'none',
-            borderRight: 'none',
-          }}
-        >
-          {isMaximized ? <RestoreIcon /> : <MaximizeIcon />}
-        </button>
-        <button
-          title="Close"
-          onClick={onClose}
-          className="theme-btn theme-btn-nav"
-          style={{
-            width: 48,
-            height: 38,
-            borderRadius: 0,
-            borderTop: 'none',
-            borderBottom: 'none',
-            borderRight: 'none',
-          }}
-        >
-          <CloseIcon />
-        </button>
-      </div>
+      {isMacOS ? brandSection : controlsSection}
     </div>
   );
 }
