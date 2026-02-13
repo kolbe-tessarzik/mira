@@ -1,30 +1,120 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import {
   DEFAULT_BROWSER_SETTINGS,
   getBrowserSettings,
   saveBrowserSettings,
 } from '../features/settings/browserSettings';
+import { applyTheme } from '../features/themes/applyTheme';
+import {
+  deleteCustomTheme,
+  getAllThemes,
+  getThemeById,
+  importThemeFromJson,
+  type ThemeEntry,
+} from '../features/themes/themeLoader';
 
 export default function Settings() {
-  const [newTabPage, setNewTabPage] = useState(() => getBrowserSettings().newTabPage);
-  const [saved, setSaved] = useState(false);
+  const AUTO_SAVE_DELAY_MS = 300;
+  const SAVED_BADGE_MS = 1600;
 
-  const handleSave = () => {
-    const next = saveBrowserSettings({ newTabPage });
-    setNewTabPage(next.newTabPage);
-    setSaved(true);
-  };
+  const initialSettings = getBrowserSettings();
+  const [newTabPage, setNewTabPage] = useState(() => initialSettings.newTabPage);
+  const [themeId, setThemeId] = useState(() => initialSettings.themeId);
+  const [themes, setThemes] = useState<ThemeEntry[]>(() => getAllThemes());
+  const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
+  const [importMessage, setImportMessage] = useState('');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const isFirstAutoSaveRef = useRef(true);
+  const clearSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleReset = () => {
-    const next = saveBrowserSettings({
-      newTabPage: DEFAULT_BROWSER_SETTINGS.newTabPage,
-    });
-    setNewTabPage(next.newTabPage);
-    setSaved(true);
+    setNewTabPage(DEFAULT_BROWSER_SETTINGS.newTabPage);
+    setThemeId(DEFAULT_BROWSER_SETTINGS.themeId);
+    applyTheme(getThemeById(DEFAULT_BROWSER_SETTINGS.themeId));
+    setThemes(getAllThemes());
+    setImportMessage('');
+    setSaveStatus('saving');
   };
 
+  const handleThemeChange = (nextThemeId: string) => {
+    setThemeId(nextThemeId);
+    setSaveStatus('saving');
+    applyTheme(getThemeById(nextThemeId));
+  };
+
+  const handleDeleteTheme = (deleteThemeId: string) => {
+    const deleted = deleteCustomTheme(deleteThemeId);
+    if (!deleted) return;
+
+    const updatedThemes = getAllThemes();
+    setThemes(updatedThemes);
+    setSaveStatus('saving');
+
+    if (themeId === deleteThemeId) {
+      const fallbackThemeId = updatedThemes[0]?.id ?? DEFAULT_BROWSER_SETTINGS.themeId;
+      setThemeId(fallbackThemeId);
+      applyTheme(getThemeById(fallbackThemeId));
+    }
+
+    setImportMessage('Theme deleted.');
+  };
+
+  const handleImportTheme = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.currentTarget.value = '';
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const imported = importThemeFromJson(text);
+      const updatedThemes = getAllThemes();
+
+      setThemes(updatedThemes);
+      setThemeId(imported.id);
+      applyTheme(imported.theme);
+      setSaveStatus('saving');
+      setImportMessage(`Imported: ${imported.theme.name} by ${imported.theme.author}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to import theme JSON.';
+      setImportMessage(message);
+    }
+  };
+
+  useEffect(() => {
+    if (isFirstAutoSaveRef.current) {
+      isFirstAutoSaveRef.current = false;
+      return;
+    }
+
+    setSaveStatus('saving');
+    const timer = setTimeout(() => {
+      saveBrowserSettings({ newTabPage, themeId });
+      setSaveStatus('saved');
+
+      if (clearSavedTimerRef.current) {
+        clearTimeout(clearSavedTimerRef.current);
+      }
+      clearSavedTimerRef.current = setTimeout(() => {
+        setSaveStatus('idle');
+      }, SAVED_BADGE_MS);
+    }, AUTO_SAVE_DELAY_MS);
+
+    return () => clearTimeout(timer);
+  }, [newTabPage, themeId]);
+
+  useEffect(() => {
+    return () => {
+      if (clearSavedTimerRef.current) {
+        clearTimeout(clearSavedTimerRef.current);
+      }
+    };
+  }, []);
+
+  const selectedTheme = themes.find((entry) => entry.id === themeId) ?? themes[0] ?? null;
+
   return (
-    <div style={{ padding: 20, maxWidth: 720 }}>
+    <div style={{ padding: 20, maxWidth: 720, background: 'var(--bg)' }}>
       <h1 style={{ marginTop: 0 }}>Settings</h1>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -37,7 +127,7 @@ export default function Settings() {
           value={newTabPage}
           onChange={(e) => {
             setNewTabPage(e.target.value);
-            setSaved(false);
+            setSaveStatus('saving');
           }}
           placeholder={DEFAULT_BROWSER_SETTINGS.newTabPage}
           style={{
@@ -53,14 +143,118 @@ export default function Settings() {
         </div>
       </div>
 
+      <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <label htmlFor="theme-dropdown-button" style={{ fontWeight: 600 }}>
+          Theme
+        </label>
+        <div style={{ position: 'relative', maxWidth: 420 }}>
+          <button
+            id="theme-dropdown-button"
+            type="button"
+            onClick={() => setThemeDropdownOpen((open) => !open)}
+            style={{
+              width: '100%',
+              textAlign: 'left',
+              padding: '8px 10px',
+              borderRadius: 6,
+              border: '1px solid #555',
+              background: '#1f1f1f',
+              color: '#fff',
+              cursor: 'pointer',
+            }}
+          >
+            {selectedTheme
+              ? `${selectedTheme.theme.name} - ${selectedTheme.theme.author}`
+              : 'No themes available'}
+          </button>
+
+          {themeDropdownOpen && (
+            <div
+              style={{
+                marginTop: 6,
+                border: '1px solid #555',
+                borderRadius: 6,
+                background: '#1a1a1a',
+                overflow: 'hidden',
+              }}
+            >
+              {themes.map((entry) => (
+                <div
+                  key={entry.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: 6,
+                    borderBottom: '1px solid #2d2d2d',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleThemeChange(entry.id);
+                      setThemeDropdownOpen(false);
+                    }}
+                    style={{
+                      flex: 1,
+                      textAlign: 'left',
+                      padding: '6px 8px',
+                      borderRadius: 4,
+                      border: entry.id === themeId ? '1px solid #3b7cff' : '1px solid #3d3d3d',
+                      background: entry.id === themeId ? '#1f2f4f' : '#242424',
+                      color: '#fff',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {entry.theme.name} - {entry.theme.author}
+                  </button>
+
+                  {entry.source === 'custom' && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteTheme(entry.id)}
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: 4,
+                        border: '1px solid #7a3b3b',
+                        background: '#3b1f1f',
+                        color: '#fff',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            type="button"
+            style={{ padding: '8px 12px' }}
+          >
+            Add Theme JSON
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            onChange={handleImportTheme}
+            style={{ display: 'none' }}
+          />
+        </div>
+        {!!importMessage && <div style={{ color: '#aaa', fontSize: 13 }}>{importMessage}</div>}
+      </div>
+
       <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-        <button onClick={handleSave} style={{ padding: '8px 12px' }}>
-          Save
-        </button>
         <button onClick={handleReset} style={{ padding: '8px 12px' }}>
           Reset to Default
         </button>
-        {saved && <div style={{ alignSelf: 'center', color: '#67d86f' }}>Saved</div>}
+        {saveStatus === 'saving' && <div style={{ alignSelf: 'center', color: '#f5c06a' }}>Saving...</div>}
+        {saveStatus === 'saved' && <div style={{ alignSelf: 'center', color: '#67d86f' }}>Saved</div>}
       </div>
     </div>
   );

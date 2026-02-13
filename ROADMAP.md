@@ -28,9 +28,9 @@
 - [x] New tab url setting (mira://settings)
 
 ## v0.6.0
-- [ ] Themes system
-- [ ] Theme JSON files
-- [ ] Error pages (offline, 404, etc.)
+- [x] Themes system
+- [x] Theme JSON files
+- [x] Error pages
 - [ ] Tab sleeping (save memory)
 - [ ] Performance improvements
 - [ ] Icons / branding

@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTabs } from './features/tabs/TabsProvider';
 import TabsProvider from './features/tabs/TabsProvider';
 import TabBar from './features/tabs/TabBar';
@@ -7,12 +7,31 @@ import AddressBar from './components/AddressBar';
 import RestoreTabsPrompt from './components/RestoreTabsPrompt';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import DownloadProvider from './features/downloads/DownloadProvider';
+import {
+  BROWSER_SETTINGS_CHANGED_EVENT,
+  getBrowserSettings,
+} from './features/settings/browserSettings';
+import { applyTheme } from './features/themes/applyTheme';
+import { getThemeById } from './features/themes/themeLoader';
 
 function Browser() {
   const addressInputRef = useRef<HTMLInputElement | null>(null);
   const { newTab, closeTab, reload, findInPage, activeId } = useTabs();
 
   useKeyboardShortcuts({ newTab, closeTab, reload, findInPage, activeId, addressInputRef });
+
+  useEffect(() => {
+    const applySelectedTheme = () => {
+      const settings = getBrowserSettings();
+      applyTheme(getThemeById(settings.themeId));
+    };
+
+    applySelectedTheme();
+
+    window.addEventListener(BROWSER_SETTINGS_CHANGED_EVENT, applySelectedTheme);
+    return () => window.removeEventListener(BROWSER_SETTINGS_CHANGED_EVENT, applySelectedTheme);
+  }, []);
+
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', width: '100vw' }}>
       <TabBar />
