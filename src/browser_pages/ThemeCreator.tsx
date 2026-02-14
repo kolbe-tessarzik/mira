@@ -8,6 +8,7 @@ import {
 } from '../features/themes/themeLoader';
 import { getBrowserSettings, saveBrowserSettings } from '../features/settings/browserSettings';
 import type { Theme, ThemeMode } from '../themes/types';
+import { getThemeColorDisplayName } from '../themes/colorVariableToDisplayName';
 
 const HEX_COLOR_PATTERN = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
 const CSS_VAR_PATTERN = /^var\(\s*--([a-zA-Z0-9_-]+)\s*\)$/;
@@ -290,7 +291,18 @@ export default function ThemeCreator() {
               background: 'var(--surfaceBg)',
             }}
           >
-            <span style={{ fontFamily: 'monospace' }}>{key}</span>
+            <span
+              style={{
+                display: 'inline-flex',
+                flexDirection: 'column',
+                gap: 2,
+              }}
+            >
+              <span>{getThemeColorDisplayName(key)}</span>
+              <span className="theme-text3" style={{ fontFamily: 'monospace', fontSize: 12 }}>
+                {key}
+              </span>
+            </span>
             <input
               type="color"
               value={colors[key]}
