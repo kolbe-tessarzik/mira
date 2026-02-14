@@ -20,7 +20,6 @@ interface WebviewElement extends HTMLElement {
   reload: () => void;
   findInPage: (text: string) => void;
   didNavigateHandler?: (e: WebviewNavigationEvent) => void;
-  didNavigateInPageHandler?: (e: WebviewNavigationEvent) => void;
   didPageTitleUpdatedHandler?: (e: WebviewPageTitleUpdatedEvent) => void;
   pageFaviconUpdatedHandler?: (e: WebviewPageFaviconUpdatedEvent) => void;
 }
@@ -110,12 +109,6 @@ export default function TabView() {
                   if (wv.didNavigateHandler) {
                     wv.removeEventListener('did-navigate', wv.didNavigateHandler as EventListener);
                   }
-                  if (wv.didNavigateInPageHandler) {
-                    wv.removeEventListener(
-                      'did-navigate-in-page',
-                      wv.didNavigateInPageHandler as EventListener,
-                    );
-                  }
                   if (wv.didPageTitleUpdatedHandler) {
                     wv.removeEventListener(
                       'page-title-updated',
@@ -132,10 +125,6 @@ export default function TabView() {
                     const ev = e as WebviewNavigationEvent;
                     navigate(ev.url, tab.id);
                   };
-                  const didNavigateInPageHandler = (e: Event) => {
-                    const ev = e as WebviewNavigationEvent;
-                    navigate(ev.url, tab.id);
-                  };
                   const didPageTitleUpdatedHandler = (e: Event) => {
                     const ev = e as WebviewPageTitleUpdatedEvent;
                     updateTabMetadata(tab.id, { title: ev.title });
@@ -146,9 +135,6 @@ export default function TabView() {
                   };
 
                   wv.didNavigateHandler = didNavigateHandler as (e: WebviewNavigationEvent) => void;
-                  wv.didNavigateInPageHandler = didNavigateInPageHandler as (
-                    e: WebviewNavigationEvent,
-                  ) => void;
                   wv.didPageTitleUpdatedHandler = didPageTitleUpdatedHandler as (
                     e: WebviewPageTitleUpdatedEvent,
                   ) => void;
@@ -157,7 +143,6 @@ export default function TabView() {
                   ) => void;
 
                   wv.addEventListener('did-navigate', didNavigateHandler);
-                  wv.addEventListener('did-navigate-in-page', didNavigateInPageHandler);
                   wv.addEventListener('page-title-updated', didPageTitleUpdatedHandler);
                   wv.addEventListener('page-favicon-updated', pageFaviconUpdatedHandler);
                 }}
