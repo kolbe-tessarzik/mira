@@ -143,7 +143,11 @@ export default function AddressBar({ inputRef }: AddressBarProps) {
         ref={inputRef}
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && go()}
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter') return;
+          go();
+          e.currentTarget.blur();
+        }}
         placeholder="Enter URL"
         className="theme-input"
         style={{
