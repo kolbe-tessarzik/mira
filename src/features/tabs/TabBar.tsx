@@ -1,4 +1,37 @@
 import { useTabs } from './TabsProvider';
+import miraLogo from '../../assets/mira_logo.png';
+
+function getDisplayTitle(url: string, title?: string): string {
+  const normalizedTitle = title?.trim();
+  if (normalizedTitle) return normalizedTitle;
+
+  if (url.startsWith('mira://')) {
+    const route = url.replace(/^mira:\/\//, '').trim();
+    if (!route || route.toLowerCase() === 'newtab') return 'New Tab';
+    return route;
+  }
+
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname || url;
+  } catch {
+    return url || 'New Tab';
+  }
+}
+
+function getDisplayFavicon(url: string, favicon?: string): string | undefined {
+  const normalizedFavicon = favicon?.trim();
+  if (normalizedFavicon) return normalizedFavicon;
+  if (url.startsWith('mira://')) return miraLogo;
+
+  try {
+    const parsed = new URL(url);
+    if (!parsed.hostname) return undefined;
+    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(parsed.hostname)}&sz=64`;
+  } catch {
+    return undefined;
+  }
+}
 
 export default function TabBar() {
   const { tabs, activeId, setActive, closeTab, newTab } = useTabs();
@@ -42,7 +75,36 @@ export default function TabBar() {
                 : undefined,
           }}
         >
-          <span>Tab</span>
+          {getDisplayFavicon(tab.url, tab.favicon) ? (
+            <img
+              src={getDisplayFavicon(tab.url, tab.favicon)}
+              alt=""
+              style={{ width: 16, height: 16, borderRadius: 3, flexShrink: 0 }}
+            />
+          ) : (
+            <span
+              aria-hidden={true}
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: 3,
+                display: 'inline-block',
+                background: 'var(--borderColor, rgba(255,255,255,0.2))',
+                flexShrink: 0,
+              }}
+            />
+          )}
+          <span
+            title={getDisplayTitle(tab.url, tab.title)}
+            style={{
+              maxWidth: 180,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {getDisplayTitle(tab.url, tab.title)}
+          </span>
           {tab.isSleeping ? (
             <span title="Sleeping" style={{ fontSize: 10, opacity: 0.75 }}>
               zz

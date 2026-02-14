@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import type { Tab } from './types';
 import { addHistoryEntry } from '../history/clientHistory';
 import { electron } from '../../electronBridge';
+import miraLogo from '../../assets/mira_logo.png';
 import {
   BROWSER_SETTINGS_CHANGED_EVENT,
   getBrowserSettings,
@@ -10,10 +11,14 @@ import {
 
 const SESSION_STORAGE_KEY = 'mira.session.tabs.v1';
 const IPC_OPEN_TAB_DEDUPE_WINDOW_MS = 500;
+const INTERNAL_FAVICON_URL = miraLogo;
 
 type WebviewElement = {
   reload: () => void;
   findInPage: (text: string) => void;
+  openDevTools: () => void;
+  closeDevTools: () => void;
+  isDevToolsOpened: () => boolean;
 } | null;
 
 type SessionSnapshot = {
@@ -32,6 +37,11 @@ type TabsContextType = {
   goForward: () => void;
   reload: () => void;
   findInPage: () => void;
+  toggleDevTools: () => void;
+  updateTabMetadata: (
+    id: string,
+    metadata: { title?: string; favicon?: string | null },
+  ) => void;
   registerWebview: (id: string, el: WebviewElement) => void;
   setActive: (id: string) => void;
   restorePromptOpen: boolean;
@@ -48,6 +58,8 @@ function createInitialTab(url: string): Tab {
   return {
     id: crypto.randomUUID(),
     url,
+    title: url.startsWith('mira://') ? 'New Tab' : url,
+    favicon: url.startsWith('mira://') ? INTERNAL_FAVICON_URL : undefined,
     history: [url],
     historyIndex: 0,
     reloadToken: 0,
@@ -65,6 +77,17 @@ function normalizeTab(value: unknown, defaultTabUrl: string): Tab | null {
 
   const id = typeof value.id === 'string' ? value.id : crypto.randomUUID();
   const url = typeof value.url === 'string' && value.url.trim() ? value.url : defaultTabUrl;
+  const title =
+    typeof value.title === 'string' && value.title.trim()
+      ? value.title.trim()
+      : url.startsWith('mira://')
+        ? 'New Tab'
+        : url;
+  const favicon = url.startsWith('mira://')
+    ? INTERNAL_FAVICON_URL
+    : typeof value.favicon === 'string' && value.favicon.trim()
+      ? value.favicon.trim()
+      : undefined;
   const historyRaw = Array.isArray(value.history) ? value.history : [url];
   const history = historyRaw.filter((entry): entry is string => typeof entry === 'string' && !!entry.trim());
   const normalizedHistory = history.length ? history : [url];
@@ -80,6 +103,8 @@ function normalizeTab(value: unknown, defaultTabUrl: string): Tab | null {
   return {
     id,
     url,
+    title,
+    favicon,
     history: normalizedHistory,
     historyIndex,
     reloadToken,
@@ -207,6 +232,8 @@ export default function TabsProvider({ children }: { children: React.ReactNode }
     const newEntry: Tab = {
       id,
       url: targetUrl,
+      title: targetUrl.startsWith('mira://') ? 'New Tab' : targetUrl,
+      favicon: targetUrl.startsWith('mira://') ? INTERNAL_FAVICON_URL : undefined,
       history: [targetUrl],
       historyIndex: 0,
       reloadToken: 0,
@@ -262,6 +289,49 @@ export default function TabsProvider({ children }: { children: React.ReactNode }
     [activeId],
   );
 
+  const updateTabMetadata = useCallback(
+    (id: string, metadata: { title?: string; favicon?: string | null }) => {
+      setTabs((currentTabs) => {
+        let changed = false;
+        const nextTabs = currentTabs.map((tab) => {
+          if (tab.id !== id) return tab;
+
+          let nextTitle = tab.title;
+          let nextFavicon = tab.favicon;
+
+          if (typeof metadata.title === 'string') {
+            const normalizedTitle = metadata.title.trim();
+            if (normalizedTitle) {
+              nextTitle = normalizedTitle;
+            }
+          }
+
+          if (metadata.favicon !== undefined) {
+            const normalizedFavicon =
+              typeof metadata.favicon === 'string' && metadata.favicon.trim()
+                ? metadata.favicon.trim()
+                : undefined;
+            nextFavicon = normalizedFavicon;
+          }
+
+          if (nextTitle === tab.title && nextFavicon === tab.favicon) {
+            return tab;
+          }
+
+          changed = true;
+          return {
+            ...tab,
+            title: nextTitle,
+            favicon: nextFavicon,
+          };
+        });
+
+        return changed ? nextTabs : currentTabs;
+      });
+    },
+    [],
+  );
+
   const navigate = (url: string, tabId?: string) => {
     const targetTabId = tabId ?? activeId;
     const normalized = url.trim();
@@ -279,9 +349,12 @@ export default function TabsProvider({ children }: { children: React.ReactNode }
         }
 
         const newHistory = tab.history.slice(0, tab.historyIndex + 1).concat(normalized);
+        const defaultTitle = normalized.startsWith('mira://') ? 'New Tab' : normalized;
         return {
           ...tab,
           url: normalized,
+          title: defaultTitle,
+          favicon: normalized.startsWith('mira://') ? INTERNAL_FAVICON_URL : undefined,
           history: newHistory,
           historyIndex: newHistory.length - 1,
           reloadToken: tab.reloadToken,
@@ -341,6 +414,22 @@ export default function TabsProvider({ children }: { children: React.ReactNode }
     const query = window.prompt('Find in page');
     if (!query) return;
     wv.findInPage(query);
+  };
+
+  const toggleDevTools = () => {
+    const wv = webviewMap.current[activeId];
+    if (!wv) return;
+
+    if (typeof wv.isDevToolsOpened === 'function' && wv.isDevToolsOpened()) {
+      if (typeof wv.closeDevTools === 'function') {
+        wv.closeDevTools();
+      }
+      return;
+    }
+
+    if (typeof wv.openDevTools === 'function') {
+      wv.openDevTools();
+    }
   };
 
   useEffect(() => {
@@ -446,6 +535,8 @@ export default function TabsProvider({ children }: { children: React.ReactNode }
         goForward,
         reload,
         findInPage,
+        toggleDevTools,
+        updateTabMetadata,
         registerWebview,
         setActive,
         restorePromptOpen,

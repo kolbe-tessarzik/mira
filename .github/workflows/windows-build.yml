@@ -24,7 +24,7 @@ jobs:
         run: npm ci
 
       - name: Build app
-        run: npm run build -- --publish never
+        run: npm run dist -- --publish never
 
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v1

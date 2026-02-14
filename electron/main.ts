@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell, session } from 'electron';
+import { app, BrowserWindow, globalShortcut, ipcMain, shell, session } from 'electron';
 import { v4 as uuidv4 } from 'uuid'; // install uuid ^9
 import type { DownloadItem } from 'electron';
 import { promises as fs } from 'fs';
@@ -425,6 +425,20 @@ function setupWindowControlsHandlers() {
   });
 }
 
+function setupGlobalShortcuts() {
+  const devToolsAccelerator = process.platform === 'darwin' ? 'Command+Alt+I' : 'Ctrl+Shift+I';
+
+  globalShortcut.register(devToolsAccelerator, () => {
+    const focusedWindow = BrowserWindow.getFocusedWindow();
+    if (!focusedWindow || focusedWindow.isDestroyed()) return;
+    focusedWindow.webContents.send('app-shortcut', 'toggle-devtools');
+  });
+
+  app.on('will-quit', () => {
+    globalShortcut.unregisterAll();
+  });
+}
+
 function createWindow(): BrowserWindow {
   const isMacOS = process.platform === 'darwin';
   const win = new BrowserWindow({
@@ -434,7 +448,7 @@ function createWindow(): BrowserWindow {
     titleBarStyle: isMacOS ? 'hiddenInset' : undefined,
     autoHideMenuBar: true,
     webPreferences: {
-      devTools: false,
+      // devTools: false,
       preload: path.join(__dirname, 'preload.js'),
       webviewTag: true,
       contextIsolation: true,
@@ -488,6 +502,7 @@ function createWindow(): BrowserWindow {
     const isReloadChord = isPrimaryChord && key === 'r';
     const isFindChord = isPrimaryChord && key === 'f';
     const isReloadKey = key === 'f5';
+
     if (isReloadChord || isReloadKey) {
       event.preventDefault();
       win.webContents.send('app-shortcut', 'reload-tab');
@@ -510,6 +525,7 @@ app.whenReady().then(async () => {
   setupWebviewTabOpenHandler();
   setupAdBlocker();
   setupWindowControlsHandlers();
+  setupGlobalShortcuts();
   scheduleAdBlockListRefresh();
   const win = createWindow();
   setupDownloadHandlers(win);

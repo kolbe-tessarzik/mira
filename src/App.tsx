@@ -18,9 +18,17 @@ import { getThemeById } from './features/themes/themeLoader';
 
 function Browser() {
   const addressInputRef = useRef<HTMLInputElement | null>(null);
-  const { newTab, closeTab, reload, findInPage, activeId } = useTabs();
+  const { newTab, closeTab, reload, findInPage, toggleDevTools, activeId } = useTabs();
 
-  useKeyboardShortcuts({ newTab, closeTab, reload, findInPage, activeId, addressInputRef });
+  useKeyboardShortcuts({
+    newTab,
+    closeTab,
+    reload,
+    findInPage,
+    toggleDevTools,
+    activeId,
+    addressInputRef,
+  });
 
   useEffect(() => {
     const applyRuntimeSettings = () => {
