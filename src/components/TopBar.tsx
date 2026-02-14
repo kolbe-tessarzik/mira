@@ -50,6 +50,7 @@ function CloseIcon() {
 export default function TopBar({ children }: { children?: React.ReactNode }) {
   const [isMaximized, setIsMaximized] = useState(false);
   const [isMacOS, setIsMacOS] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     const platformFromUAData = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData
@@ -58,7 +59,22 @@ export default function TopBar({ children }: { children?: React.ReactNode }) {
     const isMac = platform.includes('mac');
     setIsMacOS(isMac);
 
-    if (isMac) return;
+    electron?.ipcRenderer
+      .invoke<boolean>('window-is-fullscreen')
+      .then((value) => setIsFullscreen(!!value))
+      .catch(() => undefined);
+
+    const onFullscreenChanged = (_event: unknown, value: boolean) => {
+      setIsFullscreen(!!value);
+    };
+
+    electron?.ipcRenderer.on('window-fullscreen-changed', onFullscreenChanged);
+
+    if (isMac) {
+      return () => {
+        electron?.ipcRenderer.off('window-fullscreen-changed', onFullscreenChanged);
+      };
+    }
 
     electron?.ipcRenderer
       .invoke<boolean>('window-is-maximized')
@@ -71,6 +87,7 @@ export default function TopBar({ children }: { children?: React.ReactNode }) {
 
     electron?.ipcRenderer.on('window-maximized-changed', onMaximizedChanged);
     return () => {
+      electron?.ipcRenderer.off('window-fullscreen-changed', onFullscreenChanged);
       electron?.ipcRenderer.off('window-maximized-changed', onMaximizedChanged);
     };
   }, []);
@@ -110,8 +127,9 @@ export default function TopBar({ children }: { children?: React.ReactNode }) {
   const controlsSection = isMacOS ? (
     <div
       style={{
-        width: 76,
+        width: isFullscreen ? 0 : 76,
         flexShrink: 0,
+        transition: 'width 140ms ease',
       }}
     />
   ) : (

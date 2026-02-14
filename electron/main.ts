@@ -411,6 +411,12 @@ function setupWindowControlsHandlers() {
     return win.isMaximized();
   });
 
+  ipcMain.handle('window-is-fullscreen', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win || win.isDestroyed()) return false;
+    return win.isFullScreen();
+  });
+
   ipcMain.handle('window-close', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (!win || win.isDestroyed()) return false;
@@ -449,6 +455,7 @@ function createWindow(): BrowserWindow {
   win.setMenuBarVisibility(false);
   win.removeMenu();
   win.webContents.send('window-maximized-changed', win.isMaximized());
+  win.webContents.send('window-fullscreen-changed', win.isFullScreen());
 
   win.on('maximize', () => {
     if (!win.isDestroyed()) {
@@ -459,6 +466,18 @@ function createWindow(): BrowserWindow {
   win.on('unmaximize', () => {
     if (!win.isDestroyed()) {
       win.webContents.send('window-maximized-changed', false);
+    }
+  });
+
+  win.on('enter-full-screen', () => {
+    if (!win.isDestroyed()) {
+      win.webContents.send('window-fullscreen-changed', true);
+    }
+  });
+
+  win.on('leave-full-screen', () => {
+    if (!win.isDestroyed()) {
+      win.webContents.send('window-fullscreen-changed', false);
     }
   });
 
