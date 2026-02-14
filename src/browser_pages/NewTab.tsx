@@ -10,7 +10,8 @@ export default function NewTab() {
     const trimmed = query.trim();
     if (!trimmed) return;
 
-    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(trimmed)}`;
+    const query = new URLSearchParams({ q: trimmed }).toString();
+    const searchUrl = `https://www.google.com/search?${query}`;
     navigate(searchUrl); // <-- update current tab, not create a new window
     setQuery('');
   };

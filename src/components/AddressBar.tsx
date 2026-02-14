@@ -88,8 +88,8 @@ export default function AddressBar({ inputRef }: AddressBarProps) {
     } else if (raw.includes('.')) {
       finalUrl = raw.startsWith('http://') || raw.startsWith('https://') ? raw : `https://${raw}`;
     } else {
-      const query = encodeURIComponent(raw);
-      finalUrl = `https://www.google.com/search?q=${query}`;
+      const query = new URLSearchParams({ q: raw }).toString();
+      finalUrl = `https://www.google.com/search?${query}`;
     }
 
     navigate(finalUrl);

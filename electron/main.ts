@@ -47,6 +47,10 @@ const AD_BLOCK_LIST_URLS = [
 ];
 let blockedAdHosts = new Set<string>(DEFAULT_BLOCKED_AD_HOSTS);
 
+function sanitizeUserAgent(userAgent: string): string {
+  return userAgent.replace(/\sElectron\/[^\s)]+/g, '').trim();
+}
+
 function getAdBlockCachePath(): string {
   return path.join(app.getPath('userData'), AD_BLOCK_CACHE_FILE);
 }
@@ -351,6 +355,14 @@ function setupDownloadHandlers(win: BrowserWindow) {
 
 function setupWebviewTabOpenHandler() {
   app.on('web-contents-created', (_, contents) => {
+    if (contents.getType() !== 'devtools') {
+      const currentUserAgent = contents.getUserAgent();
+      const sanitized = sanitizeUserAgent(currentUserAgent);
+      if (sanitized && sanitized !== currentUserAgent) {
+        contents.setUserAgent(sanitized);
+      }
+    }
+
     const host = contents.hostWebContents;
     if (!host) return;
 
