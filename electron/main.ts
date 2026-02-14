@@ -1,7 +1,7 @@
 import { app, BrowserWindow, globalShortcut, ipcMain, Menu, shell, session } from 'electron';
 import { v4 as uuidv4 } from 'uuid'; // install uuid ^9
 import type { DownloadItem } from 'electron';
-import { promises as fs } from 'fs';
+import { existsSync, promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -517,6 +517,18 @@ function setupMacDockMenu() {
   app.dock.setMenu(dockMenu);
 }
 
+function resolveRendererEntry(): string {
+  const appPath = app.getAppPath();
+  const buildEntry = path.join(appPath, 'build', 'index.html');
+  if (existsSync(buildEntry)) return buildEntry;
+
+  // Fallback to legacy output folder for older local builds.
+  const distEntry = path.join(appPath, 'dist', 'index.html');
+  if (existsSync(distEntry)) return distEntry;
+
+  return buildEntry;
+}
+
 function createWindow(sourceWindow?: BrowserWindow, initialUrl?: string): BrowserWindow {
   const isMacOS = process.platform === 'darwin';
   const sourceBounds = sourceWindow && !sourceWindow.isDestroyed() ? sourceWindow.getBounds() : null;
@@ -545,7 +557,7 @@ function createWindow(sourceWindow?: BrowserWindow, initialUrl?: string): Browse
   if (!app.isPackaged) {
     win.loadURL('http://localhost:5173');
   } else {
-    win.loadFile('dist/index.html');
+    win.loadFile(resolveRendererEntry());
   }
 
   const normalizedInitialUrl = initialUrl?.trim();

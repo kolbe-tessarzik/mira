@@ -25,7 +25,7 @@
       "output": "release"
     },
     "files": [
-      "dist/**/*",
+      "build/**/*",
       "electron/**/*",
       "package.json"
     ],
