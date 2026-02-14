@@ -434,6 +434,7 @@ function createWindow(): BrowserWindow {
     titleBarStyle: isMacOS ? 'hiddenInset' : undefined,
     autoHideMenuBar: true,
     webPreferences: {
+      devTools: false,
       preload: path.join(__dirname, 'preload.js'),
       webviewTag: true,
       contextIsolation: true,
