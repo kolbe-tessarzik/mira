@@ -3,6 +3,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, RotateCw } from 'lucide-react';
 import { useTabs } from '../features/tabs/TabsProvider';
 import DownloadButton from './DownloadButton';
 import { getBrowserSettings } from '../features/settings/browserSettings';
+import { electron } from '../electronBridge';
 
 function ReloadIcon() {
   return <RotateCw size={16} strokeWidth={1.9} aria-hidden="true" />;
@@ -21,8 +22,18 @@ type AddressBarProps = {
 };
 
 export default function AddressBar({ inputRef }: AddressBarProps) {
-  const { tabs, activeId, navigate, goBack, goForward, reload, newTab, setActive, printPage } =
-    useTabs();
+  const {
+    tabs,
+    activeId,
+    navigate,
+    goBack,
+    goForward,
+    reload,
+    newTab,
+    openHistory,
+    setActive,
+    printPage,
+  } = useTabs();
   const [input, setInput] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -70,6 +81,34 @@ export default function AddressBar({ inputRef }: AddressBarProps) {
   const canGoBack = activeTab && activeTab.historyIndex > 0;
   const canGoForward = activeTab && activeTab.historyIndex < activeTab.history.length - 1;
   const newTabPage = getBrowserSettings().newTabPage;
+  const openNewWindow = () => {
+    if (electron?.ipcRenderer) {
+      electron.ipcRenderer.invoke('window-new').catch(() => undefined);
+      return;
+    }
+    window.open(window.location.href, '_blank', 'noopener,noreferrer');
+  };
+  const openDownloadsPage = () => {
+    const existingDownloadsTab = tabs.find((tab) => tab.url.toLowerCase() === 'mira://downloads');
+    if (existingDownloadsTab) {
+      setActive(existingDownloadsTab.id);
+      return;
+    }
+
+    if (activeTab?.url === newTabPage) {
+      navigate('mira://Downloads');
+      return;
+    }
+
+    newTab('mira://Downloads');
+  };
+  const closeWindow = () => {
+    if (electron?.ipcRenderer) {
+      electron.ipcRenderer.invoke('window-close').catch(() => undefined);
+      return;
+    }
+    window.close();
+  };
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -194,6 +233,50 @@ export default function AddressBar({ inputRef }: AddressBarProps) {
               className="theme-btn theme-btn-nav"
               style={{ width: '100%', textAlign: 'left', padding: '6px 8px' }}
               onClick={() => {
+                newTab();
+                setMenuOpen(false);
+              }}
+            >
+              New Tab (Ctrl+T)
+            </button>
+            <button
+              type="button"
+              className="theme-btn theme-btn-nav"
+              style={{ width: '100%', textAlign: 'left', padding: '6px 8px' }}
+              onClick={() => {
+                openNewWindow();
+                setMenuOpen(false);
+              }}
+            >
+              New Window (Ctrl+N)
+            </button>
+            <button
+              type="button"
+              className="theme-btn theme-btn-nav"
+              style={{ width: '100%', textAlign: 'left', padding: '6px 8px' }}
+              onClick={() => {
+                openHistory();
+                setMenuOpen(false);
+              }}
+            >
+              History
+            </button>
+            <button
+              type="button"
+              className="theme-btn theme-btn-nav"
+              style={{ width: '100%', textAlign: 'left', padding: '6px 8px' }}
+              onClick={() => {
+                openDownloadsPage();
+                setMenuOpen(false);
+              }}
+            >
+              Downloads
+            </button>
+            <button
+              type="button"
+              className="theme-btn theme-btn-nav"
+              style={{ width: '100%', textAlign: 'left', padding: '6px 8px' }}
+              onClick={() => {
                 printPage();
                 setMenuOpen(false);
               }}
@@ -218,6 +301,17 @@ export default function AddressBar({ inputRef }: AddressBarProps) {
               }}
             >
               Settings
+            </button>
+            <button
+              type="button"
+              className="theme-btn theme-btn-nav"
+              style={{ width: '100%', textAlign: 'left', padding: '6px 8px' }}
+              onClick={() => {
+                closeWindow();
+                setMenuOpen(false);
+              }}
+            >
+              Close
             </button>
           </div>
         )}

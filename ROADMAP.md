@@ -35,11 +35,11 @@
 - [x] Icons
 
 ## v0.7.0
-- [ ] UI work
+- [x] UI work
 
 ## v0.8.0
 - [ ] Find in page (Ctrl+F)
-- [ ] Reload (Ctrl+R)
+- [x] Reload (Ctrl+R)
 - [ ] Fix other shortcuts
 
 ## v1.0.0 — Stable Release
@@ -48,3 +48,6 @@
 - [ ] Improve performance
 - [ ] Fix bugs/issues
  
+## v1.1.0
+- [ ] Bookmarks and favorites
+- [ ] Site settings
