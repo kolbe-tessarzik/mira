@@ -7,6 +7,7 @@ interface UseKeyboardShortcutsProps {
   closeTab: (id: string) => void;
   reload: () => void;
   findInPage: () => void;
+  printPage: () => void;
   activeId: string | null;
   addressInputRef: RefObject<HTMLInputElement | null>;
 }
@@ -16,6 +17,7 @@ export function useKeyboardShortcuts({
   closeTab,
   reload,
   findInPage,
+  printPage,
   activeId,
   addressInputRef,
 }: UseKeyboardShortcutsProps) {
@@ -61,12 +63,19 @@ export function useKeyboardShortcuts({
         findInPage();
         return;
       }
+
+      if (!hasElectronBridge && e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        e.stopPropagation();
+        printPage();
+        return;
+      }
     };
 
     // Use capture phase (true) to intercept events before they reach the iframe
     window.addEventListener('keydown', handler, true);
     return () => window.removeEventListener('keydown', handler, true);
-  }, [newTab, closeTab, reload, findInPage, activeId, addressInputRef]);
+  }, [newTab, closeTab, reload, findInPage, printPage, activeId, addressInputRef]);
 
   useEffect(() => {
     const ipc = electron?.ipcRenderer;
@@ -79,10 +88,14 @@ export function useKeyboardShortcuts({
       }
       if (action === 'find-in-page') {
         findInPage();
+        return;
+      }
+      if (action === 'print-page') {
+        printPage();
       }
     };
 
     ipc.on('app-shortcut', onShortcut);
     return () => ipc.off('app-shortcut', onShortcut);
-  }, [reload, findInPage]);
+  }, [reload, findInPage, printPage]);
 }

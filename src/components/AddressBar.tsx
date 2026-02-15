@@ -21,7 +21,8 @@ type AddressBarProps = {
 };
 
 export default function AddressBar({ inputRef }: AddressBarProps) {
-  const { tabs, activeId, navigate, goBack, goForward, reload, newTab, setActive } = useTabs();
+  const { tabs, activeId, navigate, goBack, goForward, reload, newTab, setActive, printPage } =
+    useTabs();
   const [input, setInput] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -184,6 +185,17 @@ export default function AddressBar({ inputRef }: AddressBarProps) {
               padding: 6,
             }}
           >
+            <button
+              type="button"
+              className="theme-btn theme-btn-nav"
+              style={{ width: '100%', textAlign: 'left', padding: '6px 8px' }}
+              onClick={() => {
+                printPage();
+                setMenuOpen(false);
+              }}
+            >
+              Print... (Ctrl+P)
+            </button>
             <button
               type="button"
               className="theme-btn theme-btn-nav"

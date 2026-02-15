@@ -14,6 +14,7 @@ const IPC_OPEN_TAB_DEDUPE_WINDOW_MS = 500;
 type WebviewElement = {
   reload: () => void;
   findInPage: (text: string) => void;
+  print?: (options?: unknown, callback?: (success: boolean, failureReason: string) => void) => void;
 } | null;
 
 type SessionSnapshot = {
@@ -32,6 +33,7 @@ type TabsContextType = {
   goForward: () => void;
   reload: () => void;
   findInPage: () => void;
+  printPage: () => void;
   registerWebview: (id: string, el: WebviewElement) => void;
   setActive: (id: string) => void;
   restorePromptOpen: boolean;
@@ -353,6 +355,19 @@ export default function TabsProvider({ children }: { children: React.ReactNode }
     wv.findInPage(query);
   };
 
+  const printPage = useCallback(() => {
+    const activeTab = tabs.find((tab) => tab.id === activeId);
+    if (activeTab?.url.startsWith('mira://')) {
+      window.print();
+      return;
+    }
+
+    const wv = webviewMap.current[activeId];
+    if (!wv || typeof wv.print !== 'function') return;
+
+    wv.print({ printBackground: true });
+  }, [tabs, activeId]);
+
   useEffect(() => {
     const sleepInactiveTabs = () => {
       const now = Date.now();
@@ -454,6 +469,7 @@ export default function TabsProvider({ children }: { children: React.ReactNode }
         goForward,
         reload,
         findInPage,
+        printPage,
         registerWebview,
         setActive,
         restorePromptOpen,
