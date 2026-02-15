@@ -64,6 +64,19 @@ type TabsContextType = {
 const TabsContext = createContext<TabsContextType>(null!);
 export const useTabs = () => useContext(TabsContext);
 
+function isNewTabUrl(url: string, defaultTabUrl: string): boolean {
+  const normalized = url.trim().toLowerCase();
+  return normalized === 'mira://newtab' || normalized === defaultTabUrl.trim().toLowerCase();
+}
+
+function isSessionEphemeralTabUrl(url: string): boolean {
+  return url.trim().toLowerCase() === 'mira://newtab';
+}
+
+function filterRestorableTabs(tabs: Tab[]): Tab[] {
+  return tabs.filter((tab) => !isSessionEphemeralTabUrl(tab.url));
+}
+
 function createInitialTab(url: string): Tab {
   const now = Date.now();
   return {
@@ -144,13 +157,16 @@ function parseSnapshot(raw: string | null, defaultTabUrl: string): SessionSnapsh
     const tabs = tabsRaw
       .map((tab) => normalizeTab(tab, defaultTabUrl))
       .filter((tab): tab is Tab => tab !== null);
-    if (!tabs.length) return null;
+    const restorableTabs = filterRestorableTabs(tabs);
+    if (!restorableTabs.length) return null;
 
-    const activeIdRaw = typeof parsed.activeId === 'string' ? parsed.activeId : tabs[0].id;
-    const activeId = tabs.some((tab) => tab.id === activeIdRaw) ? activeIdRaw : tabs[0].id;
+    const activeIdRaw = typeof parsed.activeId === 'string' ? parsed.activeId : restorableTabs[0].id;
+    const activeId = restorableTabs.some((tab) => tab.id === activeIdRaw)
+      ? activeIdRaw
+      : restorableTabs[0].id;
 
     return {
-      tabs,
+      tabs: restorableTabs,
       activeId,
       savedAt: typeof parsed.savedAt === 'number' ? parsed.savedAt : Date.now(),
     };
@@ -182,9 +198,27 @@ export default function TabsProvider({ children }: { children: React.ReactNode }
   const tabSleepTimerRef = useRef<number | null>(null);
 
   const persistSession = (nextTabs: Tab[], nextActiveId: string) => {
+    const restorableTabs = filterRestorableTabs(nextTabs);
+    const safeActiveId = restorableTabs.some((tab) => tab.id === nextActiveId)
+      ? nextActiveId
+      : restorableTabs[0]?.id;
+
+    if (!restorableTabs.length || !safeActiveId) {
+      if (electron?.ipcRenderer) {
+        electron.ipcRenderer.invoke('session-save-window', null).catch(() => undefined);
+        return;
+      }
+      try {
+        localStorage.removeItem(SESSION_STORAGE_KEY);
+      } catch {
+        // Ignore storage failures (quota/private mode).
+      }
+      return;
+    }
+
     const snapshot: SessionSnapshot = {
-      tabs: nextTabs,
-      activeId: nextActiveId,
+      tabs: restorableTabs,
+      activeId: safeActiveId,
       savedAt: Date.now(),
     };
 
@@ -369,9 +403,7 @@ export default function TabsProvider({ children }: { children: React.ReactNode }
 const openHistory = () => {
   const activeTab = tabs.find((t) => t.id === activeId);
   const newTabUrl = getBrowserSettings().newTabPage;
-  const isNewTab =
-    !!activeTab &&
-    (activeTab.url === newTabUrl || activeTab.url.toLowerCase() === 'mira://newtab');
+  const isNewTab = !!activeTab && isNewTabUrl(activeTab.url, newTabUrl);
 
   if (isNewTab && activeTab) {
     navigate('mira://history', activeTab.id); // reuse current tab

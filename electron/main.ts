@@ -1,7 +1,7 @@
 import { app, BrowserWindow, globalShortcut, ipcMain, Menu, shell, session } from 'electron';
 import { v4 as uuidv4 } from 'uuid'; // install uuid ^9
 import type { DownloadItem } from 'electron';
-import { promises as fs } from 'fs';
+import { promises as fs, unlinkSync, writeFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -106,6 +106,10 @@ const AD_BLOCK_LIST_URLS = [
   'https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/light.txt',
 ];
 let blockedAdHosts = new Set<string>(DEFAULT_BLOCKED_AD_HOSTS);
+
+function isRestorableSessionTabUrl(url: string): boolean {
+  return url.trim().toLowerCase() !== 'mira://newtab';
+}
 
 function sanitizeUserAgent(userAgent: string): string {
   return userAgent.replace(/\sElectron\/[^\s)]+/g, '').trim();
@@ -360,6 +364,7 @@ function normalizeTabSessionSnapshot(value: unknown): TabSessionSnapshot | null 
     .map((entry) => entry.trim())
     .filter(Boolean);
   if (!id || !url || !history.length) return null;
+  if (!isRestorableSessionTabUrl(url)) return null;
 
   const historyIndexRaw =
     typeof candidate.historyIndex === 'number' && Number.isFinite(candidate.historyIndex)
@@ -421,8 +426,29 @@ function collectPersistedSessionSnapshot(): PersistedSessionSnapshot | null {
 
 async function persistSessionSnapshot(): Promise<void> {
   const snapshot = collectPersistedSessionSnapshot();
-  if (!snapshot) return;
+  if (!snapshot) {
+    await clearPersistedSessionSnapshot();
+    return;
+  }
   await fs.writeFile(getSessionFilePath(), JSON.stringify(snapshot, null, 2), 'utf-8');
+}
+
+function persistSessionSnapshotSync(): void {
+  const snapshot = collectPersistedSessionSnapshot();
+  if (!snapshot) {
+    try {
+      unlinkSync(getSessionFilePath());
+    } catch {
+      // Ignore missing session snapshot file.
+    }
+    return;
+  }
+
+  try {
+    writeFileSync(getSessionFilePath(), JSON.stringify(snapshot, null, 2), 'utf-8');
+  } catch {
+    // Ignore sync persistence failures during shutdown.
+  }
 }
 
 function scheduleSessionPersist(): void {
@@ -814,6 +840,12 @@ function setupSessionHandlers() {
     const sourceWindow = BrowserWindow.fromWebContents(event.sender);
     if (!sourceWindow || sourceWindow.isDestroyed()) return false;
 
+    if (payload === null) {
+      windowSessionCache.delete(sourceWindow.id);
+      scheduleSessionPersist();
+      return true;
+    }
+
     const normalized = normalizeWindowSessionSnapshot(payload);
     if (!normalized) return false;
 
@@ -1162,10 +1194,15 @@ function createWindow(
 
   win.on('closed', () => {
     bootRestoreByWindowId.delete(win.id);
-    if (!isQuitting) {
+    const noWindowsRemaining = BrowserWindow.getAllWindows().length === 0;
+
+    // Keep the most recent window snapshot when the final window closes.
+    // This allows restore to work even if the app remains running (e.g. macOS)
+    // and the user quits later from the app menu/dock.
+    if (!isQuitting && !noWindowsRemaining) {
       windowSessionCache.delete(win.id);
-      scheduleSessionPersist();
     }
+    scheduleSessionPersist();
   });
 
   win.webContents.on('before-input-event', (event, input) => {
@@ -1245,5 +1282,5 @@ app.on('before-quit', () => {
     clearTimeout(sessionPersistTimer);
     sessionPersistTimer = null;
   }
-  void persistSessionSnapshot();
+  persistSessionSnapshotSync();
 });
