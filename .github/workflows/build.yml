@@ -68,13 +68,15 @@ jobs:
           default_branch="${{ github.event.repository.default_branch }}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          mkdir -p /tmp/mira-version
-          cp package.json /tmp/mira-version/package.json
-          cp package-lock.json /tmp/mira-version/package-lock.json
           git fetch origin "$default_branch"
-          git checkout "$default_branch"
-          cp /tmp/mira-version/package.json package.json
-          cp /tmp/mira-version/package-lock.json package-lock.json
+
+          worktree_dir="$(mktemp -d)"
+          git worktree add "$worktree_dir" "origin/$default_branch"
+
+          cp package.json "$worktree_dir/package.json"
+          cp package-lock.json "$worktree_dir/package-lock.json"
+
+          cd "$worktree_dir"
           git add package.json package-lock.json
           if git diff --cached --quiet; then
             echo "No package version changes to commit."
