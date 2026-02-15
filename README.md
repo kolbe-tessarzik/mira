@@ -3,6 +3,7 @@
 A desktop browser built with Electron + React.
 
 **Roadmap: [ROADMAP.md](./ROADMAP.md)**
+**Changelog: [CHANGELOG.md](./CHANGELOG.md)**
 
 ## Features
 
