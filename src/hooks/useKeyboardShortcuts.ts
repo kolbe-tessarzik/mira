@@ -93,6 +93,9 @@ export function useKeyboardShortcuts({
         e.preventDefault();
         e.stopPropagation();
         toggleDevTools();
+        return;
+      }
+
       if (!hasElectronBridge && isPrimaryModifier && !e.shiftKey && e.key.toLowerCase() === 'p') {
         e.preventDefault();
         e.stopPropagation();
