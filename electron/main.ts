@@ -980,6 +980,7 @@ function setupSessionHandlers() {
       return mergeRestoreWindowsIntoSingleSnapshot([primaryWindow, ...otherWindows]) ?? primaryWindow;
     }
 
+    applyWindowStateFromSnapshot(sourceWindow, primaryWindow);
     for (const snapshot of otherWindows) {
       createWindow(undefined, undefined, snapshot);
     }
@@ -1000,6 +1001,23 @@ function setupSessionHandlers() {
     bootRestoreByWindowId.delete(sourceWindow.id);
     return snapshot;
   });
+}
+
+function applyWindowStateFromSnapshot(
+  win: BrowserWindow,
+  snapshot: WindowSessionSnapshot | undefined,
+): void {
+  if (!snapshot || win.isDestroyed()) return;
+
+  if (snapshot.bounds) {
+    win.setBounds(snapshot.bounds);
+  }
+  if (snapshot.isMaximized) {
+    win.maximize();
+  }
+  if (snapshot.isFullScreen) {
+    win.setFullScreen(true);
+  }
 }
 
 function setupUpdateHandlers() {
@@ -1257,12 +1275,7 @@ function createWindow(
     bootRestoreByWindowId.set(win.id, restoreSnapshot);
   }
 
-  if (restoreSnapshot?.isMaximized) {
-    win.maximize();
-  }
-  if (restoreSnapshot?.isFullScreen) {
-    win.setFullScreen(true);
-  }
+  applyWindowStateFromSnapshot(win, restoreSnapshot);
 
   const normalizedInitialUrl = initialUrl?.trim();
   if (normalizedInitialUrl) {
