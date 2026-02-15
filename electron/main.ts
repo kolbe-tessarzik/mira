@@ -1338,7 +1338,9 @@ function createWindow(
       return;
     }
 
-    scheduleSessionPersist();
+    if (!isQuitting) {
+      scheduleSessionPersist();
+    }
   });
 
   const onWindowBoundsChanged = () => {
