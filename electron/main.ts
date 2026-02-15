@@ -37,6 +37,14 @@ interface WindowSessionSnapshot {
   tabs: TabSessionSnapshot[];
   activeId: string;
   savedAt: number;
+  bounds?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  isMaximized?: boolean;
+  isFullScreen?: boolean;
 }
 
 interface PersistedSessionSnapshot {
@@ -390,6 +398,22 @@ function normalizeWindowSessionSnapshot(value: unknown): WindowSessionSnapshot |
   const activeIdRaw = typeof candidate.activeId === 'string' ? candidate.activeId : tabs[0].id;
   const activeId = tabs.some((tab) => tab.id === activeIdRaw) ? activeIdRaw : tabs[0].id;
 
+  const boundsCandidate =
+    typeof candidate.bounds === 'object' && candidate.bounds
+      ? (candidate.bounds as Record<string, unknown>)
+      : null;
+  const x = typeof boundsCandidate?.x === 'number' ? boundsCandidate.x : NaN;
+  const y = typeof boundsCandidate?.y === 'number' ? boundsCandidate.y : NaN;
+  const width = typeof boundsCandidate?.width === 'number' ? boundsCandidate.width : NaN;
+  const height = typeof boundsCandidate?.height === 'number' ? boundsCandidate.height : NaN;
+  const hasValidBounds =
+    Number.isFinite(x) &&
+    Number.isFinite(y) &&
+    Number.isFinite(width) &&
+    Number.isFinite(height) &&
+    width >= 320 &&
+    height >= 240;
+
   return {
     tabs,
     activeId,
@@ -397,6 +421,9 @@ function normalizeWindowSessionSnapshot(value: unknown): WindowSessionSnapshot |
       typeof candidate.savedAt === 'number' && Number.isFinite(candidate.savedAt)
         ? candidate.savedAt
         : Date.now(),
+    bounds: hasValidBounds ? { x, y, width, height } : undefined,
+    isMaximized: candidate.isMaximized === true,
+    isFullScreen: candidate.isFullScreen === true,
   };
 }
 
@@ -835,7 +862,13 @@ function setupSessionHandlers() {
     const normalized = normalizeWindowSessionSnapshot(payload);
     if (!normalized) return false;
 
-    windowSessionCache.set(sourceWindow.id, normalized);
+    const bounds = sourceWindow.getBounds();
+    windowSessionCache.set(sourceWindow.id, {
+      ...normalized,
+      bounds,
+      isMaximized: sourceWindow.isMaximized(),
+      isFullScreen: sourceWindow.isFullScreen(),
+    });
     scheduleSessionPersist();
     return true;
   });
@@ -1102,11 +1135,12 @@ function createWindow(
   restoreSnapshot?: WindowSessionSnapshot,
 ): BrowserWindow {
   const sourceBounds = sourceWindow && !sourceWindow.isDestroyed() ? sourceWindow.getBounds() : null;
+  const restoreBounds = restoreSnapshot?.bounds;
   const win = new BrowserWindow({
-    x: sourceBounds ? sourceBounds.x + 24 : undefined,
-    y: sourceBounds ? sourceBounds.y + 24 : undefined,
-    width: 1200,
-    height: 800,
+    x: restoreBounds ? restoreBounds.x : sourceBounds ? sourceBounds.x + 24 : undefined,
+    y: restoreBounds ? restoreBounds.y : sourceBounds ? sourceBounds.y + 24 : undefined,
+    width: restoreBounds ? restoreBounds.width : 1200,
+    height: restoreBounds ? restoreBounds.height : 800,
     frame: isMacOS,
     titleBarStyle: isMacOS ? 'hiddenInset' : isWindows ? 'hidden' : undefined,
     titleBarOverlay: isWindows
@@ -1139,6 +1173,13 @@ function createWindow(
 
   if (restoreSnapshot) {
     bootRestoreByWindowId.set(win.id, restoreSnapshot);
+  }
+
+  if (restoreSnapshot?.isMaximized) {
+    win.maximize();
+  }
+  if (restoreSnapshot?.isFullScreen) {
+    win.setFullScreen(true);
   }
 
   const normalizedInitialUrl = initialUrl?.trim();
@@ -1185,6 +1226,28 @@ function createWindow(
       scheduleSessionPersist();
     }
   });
+
+  const onWindowBoundsChanged = () => {
+    if (isQuitting) return;
+    const existing = windowSessionCache.get(win.id);
+    if (!existing) return;
+
+    windowSessionCache.set(win.id, {
+      ...existing,
+      bounds: win.getBounds(),
+      isMaximized: win.isMaximized(),
+      isFullScreen: win.isFullScreen(),
+      savedAt: Date.now(),
+    });
+    scheduleSessionPersist();
+  };
+
+  win.on('move', onWindowBoundsChanged);
+  win.on('resize', onWindowBoundsChanged);
+  win.on('maximize', onWindowBoundsChanged);
+  win.on('unmaximize', onWindowBoundsChanged);
+  win.on('enter-full-screen', onWindowBoundsChanged);
+  win.on('leave-full-screen', onWindowBoundsChanged);
 
   win.webContents.on('before-input-event', (event, input) => {
     if (input.type !== 'keyDown' || input.isAutoRepeat) return;
