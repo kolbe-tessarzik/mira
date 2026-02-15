@@ -43,7 +43,7 @@ Thumbs.db
 .env.*.local
 
 # build files
-build/
+dist/
 
 # Build output
 release/

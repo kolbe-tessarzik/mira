@@ -27,18 +27,7 @@ export function useKeyboardShortcuts({
 }: UseKeyboardShortcutsProps) {
   useEffect(() => {
     const hasElectronBridge = !!electron?.ipcRenderer;
-    const isMacOS =
-      electron?.isMacOS ??
-      ((
-        (
-          navigator as Navigator & { userAgentData?: { platform?: string } }
-        ).userAgentData?.platform ||
-        navigator.platform ||
-        navigator.userAgent ||
-        ''
-      )
-        .toLowerCase()
-        .includes('mac'));
+    const isMacOS = electron?.isMacOS ?? false;
     const handler = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {

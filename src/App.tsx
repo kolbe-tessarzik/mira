@@ -43,9 +43,15 @@ function Browser() {
     const applyRuntimeSettings = () => {
       const settings = getBrowserSettings();
       applyTheme(getThemeById(settings.themeId));
-      electron?.ipcRenderer
-        .invoke('settings-set-ad-block-enabled', settings.adBlockEnabled)
-        .catch(() => undefined);
+      if (!electron?.ipcRenderer) return;
+
+      void Promise.allSettled([
+        electron.ipcRenderer.invoke('settings-set-ad-block-enabled', settings.adBlockEnabled),
+        electron.ipcRenderer.invoke(
+          'settings-set-quit-on-last-window-close',
+          settings.quitOnLastWindowClose,
+        ),
+      ]);
     };
 
     applyRuntimeSettings();

@@ -14,7 +14,7 @@ export default defineConfig({
     exclude: ['electron'],
   },
   build: {
-    outDir: 'build',
+    outDir: 'dist',
     emptyOutDir: true,
   }
 })

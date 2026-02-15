@@ -1,7 +1,7 @@
 import { app, BrowserWindow, globalShortcut, ipcMain, Menu, shell, session } from 'electron';
 import { v4 as uuidv4 } from 'uuid'; // install uuid ^9
 import type { DownloadItem } from 'electron';
-import { existsSync, promises as fs } from 'fs';
+import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -10,6 +10,7 @@ const downloadMap = new Map<string, DownloadItem>();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const HISTORY_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+const isMacOS = process.platform === 'darwin';
 
 interface HistoryEntry {
   id: string;
@@ -22,6 +23,7 @@ let historyCache: HistoryEntry[] = [];
 const OPEN_TAB_DEDUPE_WINDOW_MS = 500;
 const recentOpenTabByHost = new Map<number, { url: string; openedAt: number }>();
 let adBlockEnabled = true;
+let quitOnLastWindowClose = false;
 const AD_BLOCK_CACHE_FILE = 'adblock-hosts-v1.txt';
 const AD_BLOCK_FETCH_TIMEOUT_MS = 15000;
 const AD_BLOCK_REFRESH_INTERVAL_MS = 24 * 60 * 60 * 1000;
@@ -435,6 +437,11 @@ function setupAdBlocker() {
     adBlockEnabled = enabled !== false;
     return adBlockEnabled;
   });
+
+  ipcMain.handle('settings-set-quit-on-last-window-close', async (_, enabled: unknown) => {
+    quitOnLastWindowClose = isMacOS && enabled === true;
+    return quitOnLastWindowClose;
+  });
 }
 
 function setupWindowControlsHandlers() {
@@ -493,7 +500,7 @@ function setupWindowControlsHandlers() {
 }
 
 function setupGlobalShortcuts() {
-  const devToolsAccelerator = process.platform === 'darwin' ? 'Command+Alt+I' : 'Ctrl+Shift+I';
+  const devToolsAccelerator = isMacOS ? 'Command+Alt+I' : 'Ctrl+Shift+I';
 
   globalShortcut.register(devToolsAccelerator, () => {
     const focusedWindow = BrowserWindow.getFocusedWindow();
@@ -507,7 +514,7 @@ function setupGlobalShortcuts() {
 }
 
 function setupMacDockMenu() {
-  if (process.platform !== 'darwin') return;
+  if (!isMacOS) return;
   const dockMenu = Menu.buildFromTemplate([
     {
       label: 'New Window',
@@ -517,20 +524,7 @@ function setupMacDockMenu() {
   app.dock.setMenu(dockMenu);
 }
 
-function resolveRendererEntry(): string {
-  const appPath = app.getAppPath();
-  const buildEntry = path.join(appPath, 'build', 'index.html');
-  if (existsSync(buildEntry)) return buildEntry;
-
-  // Fallback to legacy output folder for older local builds.
-  const distEntry = path.join(appPath, 'dist', 'index.html');
-  if (existsSync(distEntry)) return distEntry;
-
-  return buildEntry;
-}
-
 function createWindow(sourceWindow?: BrowserWindow, initialUrl?: string): BrowserWindow {
-  const isMacOS = process.platform === 'darwin';
   const sourceBounds = sourceWindow && !sourceWindow.isDestroyed() ? sourceWindow.getBounds() : null;
   const win = new BrowserWindow({
     x: sourceBounds ? sourceBounds.x + 24 : undefined,
@@ -557,7 +551,7 @@ function createWindow(sourceWindow?: BrowserWindow, initialUrl?: string): Browse
   if (!app.isPackaged) {
     win.loadURL('http://localhost:5173');
   } else {
-    win.loadFile(resolveRendererEntry());
+    win.loadFile('dist/index.html');
   }
 
   const normalizedInitialUrl = initialUrl?.trim();
@@ -647,7 +641,12 @@ app.on('activate', () => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+  if (!isMacOS) {
+    app.quit();
+    return;
+  }
+
+  if (quitOnLastWindowClose) {
     app.quit();
   }
 });
