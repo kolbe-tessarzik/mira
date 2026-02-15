@@ -74,6 +74,9 @@ body {
   --layoutInputRadius: 6px;
   --layoutPanelRadius: 8px;
   --layoutTabRadius: 8px;
+  --layoutTabGap: 6px;
+  --layoutTabMinWidth: 100px;
+  --layoutTabTargetWidth: 220px;
   --layoutBorderWidth: 1px;
   --layoutTopBarHeight: 38px;
   --layoutAddressBarPaddingY: 6px;

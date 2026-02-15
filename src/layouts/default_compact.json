@@ -6,6 +6,9 @@
     "layoutInputRadius": "4px",
     "layoutPanelRadius": "6px",
     "layoutTabRadius": "6px",
+    "layoutTabGap": "4px",
+    "layoutTabMinWidth": "90px",
+    "layoutTabTargetWidth": "180px",
     "layoutBorderWidth": "1px",
     "layoutTopBarHeight": "34px",
     "layoutAddressBarPaddingY": "4px",
@@ -14,4 +17,3 @@
     "layoutDownloadIndicatorVisibility": "sometimes"
   }
 }
-

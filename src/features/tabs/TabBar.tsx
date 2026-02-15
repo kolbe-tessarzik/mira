@@ -3,8 +3,10 @@ import { X } from 'lucide-react';
 import { useTabs } from './TabsProvider';
 import miraLogo from '../../assets/mira_logo.png';
 
-const TAB_TARGET_WIDTH_PX = 220;
-const TAB_MIN_WIDTH_PX = 100;
+const TAB_TARGET_WIDTH = 'var(--layoutTabTargetWidth, 220px)';
+const TAB_MIN_WIDTH = 'var(--layoutTabMinWidth, 100px)';
+const TAB_STRIP_GAP = 'var(--layoutTabGap, 6px)';
+const TAB_ROW_HEIGHT = 'var(--layoutNavButtonHeight, 30px)';
 
 function getDisplayTitle(url: string, title?: string): string {
   const normalizedTitle = title?.trim();
@@ -99,8 +101,8 @@ export default function TabBar() {
     <div
       style={{
         display: 'flex',
-        gap: 6,
-        padding: '4px 0',
+        gap: TAB_STRIP_GAP,
+        padding: 0,
         alignItems: 'center',
         minWidth: 0,
         flex: 1,
@@ -119,7 +121,7 @@ export default function TabBar() {
           className="tab-strip-scroll"
           style={{
             display: 'flex',
-            gap: 6,
+            gap: TAB_STRIP_GAP,
             overflowX: 'auto',
             overflowY: 'hidden',
             alignItems: 'center',
@@ -143,7 +145,8 @@ export default function TabBar() {
                 }}
                 className={`theme-tab ${tab.id === activeId ? 'theme-tab-selected' : ''}`}
                 style={{
-                  padding: '6px 10px',
+                  height: TAB_ROW_HEIGHT,
+                  padding: '0 10px',
                   cursor: 'pointer',
                   borderRadius:
                     tab.id === activeId
@@ -153,12 +156,15 @@ export default function TabBar() {
                   gap: 6,
                   alignItems: 'center',
                   whiteSpace: 'nowrap',
-                  flex: `1 1 ${TAB_TARGET_WIDTH_PX}px`,
-                  minWidth: TAB_MIN_WIDTH_PX,
-                  maxWidth: TAB_TARGET_WIDTH_PX,
+                  flex: `1 1 ${TAB_TARGET_WIDTH}`,
+                  minWidth: TAB_MIN_WIDTH,
+                  maxWidth: TAB_TARGET_WIDTH,
                   position: 'relative',
                   zIndex: tab.id === activeId ? 2 : 1,
-                  marginBottom: tab.id === activeId ? -1 : 1,
+                  marginBottom:
+                    tab.id === activeId
+                      ? 'calc(-1 * var(--layoutBorderWidth, 1px))'
+                      : 'var(--layoutBorderWidth, 1px)',
                   background:
                     tab.id === activeId
                       ? 'var(--surfaceBgHover, var(--tabBgHover))'
@@ -242,7 +248,12 @@ export default function TabBar() {
       <button
         onClick={() => newTab()}
         className="theme-btn theme-btn-nav"
-        style={{ padding: '5px 10px', minWidth: 34, flexShrink: 0 }}
+        style={{
+          height: TAB_ROW_HEIGHT,
+          minWidth: 'var(--layoutDownloadButtonSize, 34px)',
+          padding: '0 10px',
+          flexShrink: 0,
+        }}
       >
         +
       </button>
@@ -256,8 +267,8 @@ export default function TabBar() {
             zIndex: 9999,
             minWidth: 170,
             background: 'var(--surfaceBg, var(--tabBg))',
-            border: '1px solid var(--surfaceBorder, var(--tabBorder))',
-            borderRadius: 8,
+            border: 'var(--layoutBorderWidth, 1px) solid var(--surfaceBorder, var(--tabBorder))',
+            borderRadius: 'var(--layoutPanelRadius, 8px)',
             padding: 6,
             boxShadow: '0 10px 30px rgba(0, 0, 0, 0.35)',
           }}
