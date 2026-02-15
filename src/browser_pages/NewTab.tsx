@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import miraLogo from '../assets/mira_logo.png';
 import { useTabs } from '../features/tabs/TabsProvider';
 
 export default function NewTab() {
@@ -10,9 +11,8 @@ export default function NewTab() {
     const trimmed = query.trim();
     if (!trimmed) return;
 
-    const query = new URLSearchParams({ q: trimmed }).toString();
-    const searchUrl = `https://www.google.com/search?${query}`;
-    navigate(searchUrl); // <-- update current tab, not create a new window
+    const searchQuery = new URLSearchParams({ q: trimmed }).toString();
+    navigate(`https://www.google.com/search?${searchQuery}`);
     setQuery('');
   };
 
@@ -23,12 +23,18 @@ export default function NewTab() {
         flexDirection: 'column',
         height: '100%',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
+        paddingTop: '12vh',
         background: 'var(--bg)',
         color: 'var(--text1)',
       }}
     >
-      <form onSubmit={handleSearch} style={{ display: 'flex', width: '60%', maxWidth: 600 }}>
+      <img src={miraLogo} alt="Mira logo" style={{ width: 220, height: 220, objectFit: 'contain' }} />
+      <h1 style={{ marginTop: 20, fontSize: 34, fontWeight: 700, letterSpacing: 0.3 }}>Welcome to Mira</h1>
+      <form
+        onSubmit={handleSearch}
+        style={{ display: 'flex', width: '60%', maxWidth: 600, minWidth: 320, marginTop: 28 }}
+      >
         <input
           type="text"
           value={query}
