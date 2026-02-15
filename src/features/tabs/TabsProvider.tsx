@@ -411,19 +411,41 @@ export default function TabsProvider({ children }: { children: React.ReactNode }
     setActiveId(id);
   }, [activeId]);
 
-const openHistory = () => {
-  const activeTab = tabs.find((t) => t.id === activeId);
-  const newTabUrl = getBrowserSettings().newTabPage;
-  const isNewTab = !!activeTab && isNewTabUrl(activeTab.url, newTabUrl);
+  const openHistory = () => {
+    const activeTab = tabs.find((t) => t.id === activeId);
+    const newTabUrl = getBrowserSettings().newTabPage;
+    const isNewTab = !!activeTab && isNewTabUrl(activeTab.url, newTabUrl);
 
-  if (isNewTab && activeTab) {
-    navigate('mira://history', activeTab.id); // reuse current tab
-  } else {
-    newTab('mira://history'); // open separate tab
-  }
-}
+    if (isNewTab && activeTab) {
+      navigate('mira://history', activeTab.id); // reuse current tab
+    } else {
+      newTab('mira://history'); // open separate tab
+    }
+  };
+
+  const closeCurrentWindow = () => {
+    const ipc = electron?.ipcRenderer;
+    if (ipc) {
+      ipc.invoke('session-save-window', null).catch(() => undefined);
+      ipc.invoke('window-close').catch(() => undefined);
+      return;
+    }
+
+    try {
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+    } catch {
+      // Ignore storage failures.
+    }
+    window.close();
+  };
 
   const closeTab = (id: string) => {
+    const shouldCloseWindow = tabs.length === 1 && tabs[0]?.id === id;
+    if (shouldCloseWindow) {
+      closeCurrentWindow();
+      return;
+    }
+
     setTabs((t) => {
       const next = t.filter((tab) => tab.id !== id);
       if (id !== activeId || !next.length) return next;
