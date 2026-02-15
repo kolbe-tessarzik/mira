@@ -1,5 +1,5 @@
 import { app, BrowserWindow, globalShortcut, ipcMain, Menu, shell, session } from 'electron';
-import { v4 as uuidv4 } from 'uuid'; // install uuid ^9
+import { v4 as uuidv4 } from 'uuid';
 import type { DownloadItem, WebContents } from 'electron';
 import { promises as fs, unlinkSync, writeFileSync } from 'fs';
 import path from 'path';
