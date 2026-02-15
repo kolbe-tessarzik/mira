@@ -3,6 +3,7 @@
 ## Unreleased
 
 - History shows site title
+- Restoring tabs will restore all windows
 
 ## v0.7.0 - 2026-02-15
 
