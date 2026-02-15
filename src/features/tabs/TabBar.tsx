@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { X } from 'lucide-react';
 import { useTabs } from './TabsProvider';
 import miraLogo from '../../assets/mira_logo.png';
 
@@ -140,15 +141,24 @@ export default function TabBar() {
                 zz
               </span>
             ) : null}
-            <span
+            <button
+              type="button"
+              aria-label="Close tab"
               onClick={(e) => {
                 e.stopPropagation();
                 closeTab(tab.id);
               }}
-              style={{ opacity: 0.8 }}
+              className="theme-btn theme-btn-nav"
+              style={{
+                opacity: 0.8,
+                padding: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
-              x
-            </span>
+              <X size={12} strokeWidth={2.2} aria-hidden="true" />
+            </button>
           </div>
         );
       })}
