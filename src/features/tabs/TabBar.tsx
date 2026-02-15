@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { useTabs } from './TabsProvider';
 import miraLogo from '../../assets/mira_logo.png';
 
 const TAB_TARGET_WIDTH_PX = 220;
-const TAB_MIN_WIDTH_PX = 50;
+const TAB_MIN_WIDTH_PX = 100;
 
 function getDisplayTitle(url: string, title?: string): string {
   const normalizedTitle = title?.trim();
@@ -42,6 +42,47 @@ export default function TabBar() {
   const { tabs, activeId, setActive, closeTab, moveTabToNewWindow, newTab } = useTabs();
   const [menuTabId, setMenuTabId] = useState<string | null>(null);
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const tabElementRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const prevTabCountRef = useRef(tabs.length);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const updateOverflowHints = () => {
+      const maxScrollLeft = el.scrollWidth - el.clientWidth;
+      setCanScrollLeft(el.scrollLeft > 1);
+      setCanScrollRight(maxScrollLeft - el.scrollLeft > 1);
+    };
+
+    updateOverflowHints();
+    el.addEventListener('scroll', updateOverflowHints, { passive: true });
+    window.addEventListener('resize', updateOverflowHints);
+    const rafId = window.requestAnimationFrame(updateOverflowHints);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      el.removeEventListener('scroll', updateOverflowHints);
+      window.removeEventListener('resize', updateOverflowHints);
+    };
+  }, [tabs.length]);
+
+  useEffect(() => {
+    const previousCount = prevTabCountRef.current;
+    prevTabCountRef.current = tabs.length;
+    if (tabs.length <= previousCount) return;
+
+    const activeTabEl = tabElementRefs.current[activeId];
+    if (!activeTabEl) return;
+    activeTabEl.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'nearest',
+    });
+  }, [tabs.length, activeId]);
 
   useEffect(() => {
     if (!menuPos) return;
@@ -75,13 +116,20 @@ export default function TabBar() {
         style={{
           flex: 1,
           minWidth: 0,
-          display: 'flex',
-          gap: 6,
-          overflowX: 'auto',
-          overflowY: 'hidden',
-          alignItems: 'center',
+          position: 'relative',
         }}
       >
+        <div
+          ref={scrollRef}
+          className="tab-strip-scroll"
+          style={{
+            display: 'flex',
+            gap: 6,
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            alignItems: 'center',
+          }}
+        >
         {tabs.map((tab) => {
           const displayFavicon = getDisplayFavicon(tab.url, tab.favicon);
           const displayTitle = getDisplayTitle(tab.url, tab.title);
@@ -91,6 +139,9 @@ export default function TabBar() {
           return (
             <div
               key={tab.id}
+              ref={(el) => {
+                tabElementRefs.current[tab.id] = el;
+              }}
               onClick={() => setActive(tab.id)}
               onContextMenu={(event) => {
                 event.preventDefault();
@@ -179,6 +230,17 @@ export default function TabBar() {
             </div>
           );
         })}
+        </div>
+        <div
+          aria-hidden={true}
+          className="tab-strip-fade-left"
+          style={{ opacity: canScrollLeft ? 1 : 0 }}
+        />
+        <div
+          aria-hidden={true}
+          className="tab-strip-fade-right"
+          style={{ opacity: canScrollRight ? 1 : 0 }}
+        />
       </div>
 
       <button
