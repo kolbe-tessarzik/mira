@@ -43,6 +43,8 @@ interface PersistedSessionSnapshot {
   savedAt: number;
 }
 
+type SessionRestoreMode = 'tabs' | 'windows';
+
 interface GitHubReleaseAsset {
   name?: string;
   browser_download_url?: string;
@@ -77,6 +79,7 @@ const windowSessionCache = new Map<number, WindowSessionSnapshot>();
 const bootRestoreByWindowId = new Map<number, WindowSessionSnapshot>();
 let pendingRestoreSession: PersistedSessionSnapshot | null = null;
 let sessionPersistTimer: NodeJS.Timeout | null = null;
+const pendingClosedWindowCleanupTimers = new Map<number, NodeJS.Timeout>();
 let isQuitting = false;
 let adBlockEnabled = true;
 let quitOnLastWindowClose = false;
@@ -413,6 +416,36 @@ function normalizeWindowSessionSnapshot(value: unknown): WindowSessionSnapshot |
       typeof candidate.savedAt === 'number' && Number.isFinite(candidate.savedAt)
         ? candidate.savedAt
         : Date.now(),
+  };
+}
+
+function mergeRestoreWindowsIntoSingleSnapshot(
+  windows: WindowSessionSnapshot[],
+): WindowSessionSnapshot | null {
+  if (!windows.length) return null;
+
+  const mergedTabs: TabSessionSnapshot[] = [];
+  const usedIds = new Set<string>();
+
+  for (const windowSnapshot of windows) {
+    for (const tab of windowSnapshot.tabs) {
+      const nextId = usedIds.has(tab.id) ? uuidv4() : tab.id;
+      usedIds.add(nextId);
+      mergedTabs.push({ ...tab, id: nextId });
+    }
+  }
+
+  if (!mergedTabs.length) return null;
+
+  const preferredActiveId = windows[0]?.activeId ?? mergedTabs[0].id;
+  const activeId = mergedTabs.some((tab) => tab.id === preferredActiveId)
+    ? preferredActiveId
+    : mergedTabs[0].id;
+
+  return {
+    tabs: mergedTabs,
+    activeId,
+    savedAt: Date.now(),
   };
 }
 
@@ -871,13 +904,18 @@ function setupSessionHandlers() {
     };
   });
 
-  ipcMain.handle('session-accept-restore', (event) => {
+  ipcMain.handle('session-accept-restore', (event, mode: unknown) => {
     const sourceWindow = BrowserWindow.fromWebContents(event.sender);
     if (!sourceWindow || sourceWindow.isDestroyed()) return null;
     if (!pendingRestoreSession?.windows.length) return null;
 
+    const restoreMode: SessionRestoreMode = mode === 'tabs' ? 'tabs' : 'windows';
     const [primaryWindow, ...otherWindows] = pendingRestoreSession.windows;
     pendingRestoreSession = null;
+
+    if (restoreMode === 'tabs') {
+      return mergeRestoreWindowsIntoSingleSnapshot([primaryWindow, ...otherWindows]) ?? primaryWindow;
+    }
 
     for (const snapshot of otherWindows) {
       createWindow(undefined, undefined, snapshot);
@@ -1196,12 +1234,26 @@ function createWindow(
     bootRestoreByWindowId.delete(win.id);
     const noWindowsRemaining = BrowserWindow.getAllWindows().length === 0;
 
-    // Keep the most recent window snapshot when the final window closes.
-    // This allows restore to work even if the app remains running (e.g. macOS)
-    // and the user quits later from the app menu/dock.
+    // Do not remove this snapshot immediately. Users may be closing windows
+    // in quick succession to quit the app, and we need all windows restorable.
+    // If the app keeps running, remove the closed window shortly after.
     if (!isQuitting && !noWindowsRemaining) {
-      windowSessionCache.delete(win.id);
+      const existingTimer = pendingClosedWindowCleanupTimers.get(win.id);
+      if (existingTimer) {
+        clearTimeout(existingTimer);
+      }
+      const cleanupTimer = setTimeout(() => {
+        pendingClosedWindowCleanupTimers.delete(win.id);
+        if (isQuitting) return;
+        if (BrowserWindow.getAllWindows().length === 0) return;
+        windowSessionCache.delete(win.id);
+        scheduleSessionPersist();
+      }, 2000);
+      cleanupTimer.unref();
+      pendingClosedWindowCleanupTimers.set(win.id, cleanupTimer);
+      return;
     }
+
     scheduleSessionPersist();
   });
 
@@ -1278,6 +1330,10 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   isQuitting = true;
+  for (const timer of pendingClosedWindowCleanupTimers.values()) {
+    clearTimeout(timer);
+  }
+  pendingClosedWindowCleanupTimers.clear();
   if (sessionPersistTimer) {
     clearTimeout(sessionPersistTimer);
     sessionPersistTimer = null;

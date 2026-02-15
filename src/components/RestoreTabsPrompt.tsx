@@ -5,7 +5,8 @@ export default function RestoreTabsPrompt() {
     restorePromptOpen,
     restoreTabCount,
     restoreWindowCount,
-    restorePreviousSession,
+    restoreTabsFromPreviousSession,
+    restoreWindowsFromPreviousSession,
     discardPreviousSession,
   } = useTabs();
 
@@ -50,13 +51,22 @@ export default function RestoreTabsPrompt() {
             Start Fresh
           </button>
           <button
-            onClick={restorePreviousSession}
-            className="theme-btn theme-btn-go"
+            onClick={restoreTabsFromPreviousSession}
+            className="theme-btn theme-btn-nav"
             style={{
               padding: '7px 12px',
             }}
           >
             Restore Tabs
+          </button>
+          <button
+            onClick={restoreWindowsFromPreviousSession}
+            className="theme-btn theme-btn-go"
+            style={{
+              padding: '7px 12px',
+            }}
+          >
+            Restore Windows
           </button>
         </div>
       </div>

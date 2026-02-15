@@ -34,6 +34,8 @@ type SessionRestoreState = {
   windowCount: number;
 };
 
+type SessionRestoreMode = 'tabs' | 'windows';
+
 type TabsContextType = {
   tabs: Tab[];
   activeId: string;
@@ -57,7 +59,8 @@ type TabsContextType = {
   restorePromptOpen: boolean;
   restoreTabCount: number;
   restoreWindowCount: number;
-  restorePreviousSession: () => void;
+  restoreTabsFromPreviousSession: () => void;
+  restoreWindowsFromPreviousSession: () => void;
   discardPreviousSession: () => void;
 };
 
@@ -295,10 +298,10 @@ export default function TabsProvider({ children }: { children: React.ReactNode }
     };
   }, []);
 
-  const restorePreviousSession = () => {
+  const restorePreviousSession = (mode: SessionRestoreMode) => {
     const ipc = electron?.ipcRenderer;
     if (ipc) {
-      ipc.invoke<SessionSnapshot | null>('session-accept-restore')
+      ipc.invoke<SessionSnapshot | null>('session-accept-restore', mode)
         .then((snapshot) => {
           if (!snapshot || !snapshot.tabs.length) {
             setRestorePromptOpen(false);
@@ -337,6 +340,14 @@ export default function TabsProvider({ children }: { children: React.ReactNode }
     setRestorePromptOpen(false);
     setPendingSession(null);
     persistSession(restoredTabs, pendingSession.activeId);
+  };
+
+  const restoreTabsFromPreviousSession = () => {
+    restorePreviousSession('tabs');
+  };
+
+  const restoreWindowsFromPreviousSession = () => {
+    restorePreviousSession('windows');
   };
 
   const discardPreviousSession = () => {
@@ -772,7 +783,8 @@ const openHistory = () => {
         restorePromptOpen,
         restoreTabCount: pendingSession?.tabs.length ?? restoreTabCountState,
         restoreWindowCount,
-        restorePreviousSession,
+        restoreTabsFromPreviousSession,
+        restoreWindowsFromPreviousSession,
         discardPreviousSession,
       }}
     >
