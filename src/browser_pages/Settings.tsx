@@ -30,6 +30,9 @@ export default function Settings() {
   const [quitOnLastWindowClose, setQuitOnLastWindowClose] = useState(
     () => initialSettings.quitOnLastWindowClose,
   );
+  const [disableNewTabIntro, setDisableNewTabIntro] = useState(
+    () => initialSettings.disableNewTabIntro,
+  );
   const [themes, setThemes] = useState<ThemeEntry[]>(() => getAllThemes());
   const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
   const [importMessage, setImportMessage] = useState('');
@@ -47,6 +50,7 @@ export default function Settings() {
     setTabSleepMode(DEFAULT_BROWSER_SETTINGS.tabSleepMode);
     setAdBlockEnabled(DEFAULT_BROWSER_SETTINGS.adBlockEnabled);
     setQuitOnLastWindowClose(DEFAULT_BROWSER_SETTINGS.quitOnLastWindowClose);
+    setDisableNewTabIntro(DEFAULT_BROWSER_SETTINGS.disableNewTabIntro);
     applyTheme(getThemeById(DEFAULT_BROWSER_SETTINGS.themeId));
     setThemes(getAllThemes());
     setImportMessage('');
@@ -113,6 +117,7 @@ export default function Settings() {
         tabSleepMode,
         adBlockEnabled,
         quitOnLastWindowClose,
+        disableNewTabIntro,
       });
       setSaveStatus('saved');
 
@@ -125,7 +130,16 @@ export default function Settings() {
     }, AUTO_SAVE_DELAY_MS);
 
     return () => clearTimeout(timer);
-  }, [newTabPage, themeId, tabSleepValue, tabSleepUnit, tabSleepMode, adBlockEnabled, quitOnLastWindowClose]);
+  }, [
+    newTabPage,
+    themeId,
+    tabSleepValue,
+    tabSleepUnit,
+    tabSleepMode,
+    adBlockEnabled,
+    quitOnLastWindowClose,
+    disableNewTabIntro,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -236,6 +250,27 @@ export default function Settings() {
             <option value="discard">Discard (save more memory)</option>
           </select>
         </div>
+      </div>
+
+      <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <label htmlFor="disable-new-tab-intro" style={{ fontWeight: 600 }}>
+          New Tab Intro
+        </label>
+        <label
+          htmlFor="disable-new-tab-intro"
+          style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+        >
+          <input
+            id="disable-new-tab-intro"
+            type="checkbox"
+            checked={disableNewTabIntro}
+            onChange={(e) => {
+              setDisableNewTabIntro(e.currentTarget.checked);
+              setSaveStatus('saving');
+            }}
+          />
+          Disable intro animation at all times
+        </label>
       </div>
 
       <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
