@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- History shows site title
 
 ## v0.7.0 - 2026-02-15
 
