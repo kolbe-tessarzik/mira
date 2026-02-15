@@ -1,7 +1,7 @@
 import { app, BrowserWindow, globalShortcut, ipcMain, Menu, shell, session } from 'electron';
-import { v4 as uuidv4 } from 'uuid'; // install uuid ^9
+import { v4 as uuidv4 } from 'uuid';
 import type { DownloadItem, WebContents } from 'electron';
-import { promises as fs } from 'fs';
+import { promises as fs, unlinkSync, writeFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -52,6 +52,8 @@ interface PersistedSessionSnapshot {
   savedAt: number;
 }
 
+type SessionRestoreMode = 'tabs' | 'windows';
+
 interface GitHubReleaseAsset {
   name?: string;
   browser_download_url?: string;
@@ -86,6 +88,7 @@ const windowSessionCache = new Map<number, WindowSessionSnapshot>();
 const bootRestoreByWindowId = new Map<number, WindowSessionSnapshot>();
 let pendingRestoreSession: PersistedSessionSnapshot | null = null;
 let sessionPersistTimer: NodeJS.Timeout | null = null;
+const pendingClosedWindowCleanupTimers = new Map<number, NodeJS.Timeout>();
 let isQuitting = false;
 let adBlockEnabled = true;
 let quitOnLastWindowClose = false;
@@ -115,6 +118,10 @@ const AD_BLOCK_LIST_URLS = [
   'https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/light.txt',
 ];
 let blockedAdHosts = new Set<string>(DEFAULT_BLOCKED_AD_HOSTS);
+
+function isRestorableSessionTabUrl(url: string): boolean {
+  return url.trim().toLowerCase() !== 'mira://newtab';
+}
 
 function sanitizeUserAgent(userAgent: string): string {
   return userAgent.replace(/\sElectron\/[^\s)]+/g, '').trim();
@@ -318,9 +325,21 @@ async function updateHistoryEntryTitle(payload: { url?: string; title?: string }
   if (!url || !title || title === url) return false;
 
   const match = historyCache.find((entry) => entry.url === url);
-  if (!match || match.title === title) return false;
+  if (match) {
+    if (match.title === title) return false;
+    match.title = title;
+  } else {
+    historyCache = pruneHistory([
+      {
+        id: uuidv4(),
+        url,
+        title,
+        visitedAt: Date.now(),
+      },
+      ...historyCache,
+    ]);
+  }
 
-  match.title = title;
   await persistHistory();
   return true;
 }
@@ -357,6 +376,7 @@ function normalizeTabSessionSnapshot(value: unknown): TabSessionSnapshot | null 
     .map((entry) => entry.trim())
     .filter(Boolean);
   if (!id || !url || !history.length) return null;
+  if (!isRestorableSessionTabUrl(url)) return null;
 
   const historyIndexRaw =
     typeof candidate.historyIndex === 'number' && Number.isFinite(candidate.historyIndex)
@@ -427,6 +447,36 @@ function normalizeWindowSessionSnapshot(value: unknown): WindowSessionSnapshot |
   };
 }
 
+function mergeRestoreWindowsIntoSingleSnapshot(
+  windows: WindowSessionSnapshot[],
+): WindowSessionSnapshot | null {
+  if (!windows.length) return null;
+
+  const mergedTabs: TabSessionSnapshot[] = [];
+  const usedIds = new Set<string>();
+
+  for (const windowSnapshot of windows) {
+    for (const tab of windowSnapshot.tabs) {
+      const nextId = usedIds.has(tab.id) ? uuidv4() : tab.id;
+      usedIds.add(nextId);
+      mergedTabs.push({ ...tab, id: nextId });
+    }
+  }
+
+  if (!mergedTabs.length) return null;
+
+  const preferredActiveId = windows[0]?.activeId ?? mergedTabs[0].id;
+  const activeId = mergedTabs.some((tab) => tab.id === preferredActiveId)
+    ? preferredActiveId
+    : mergedTabs[0].id;
+
+  return {
+    tabs: mergedTabs,
+    activeId,
+    savedAt: Date.now(),
+  };
+}
+
 function collectPersistedSessionSnapshot(): PersistedSessionSnapshot | null {
   const windows = Array.from(windowSessionCache.values())
     .filter((entry) => entry.tabs.length > 0)
@@ -437,8 +487,29 @@ function collectPersistedSessionSnapshot(): PersistedSessionSnapshot | null {
 
 async function persistSessionSnapshot(): Promise<void> {
   const snapshot = collectPersistedSessionSnapshot();
-  if (!snapshot) return;
+  if (!snapshot) {
+    await clearPersistedSessionSnapshot();
+    return;
+  }
   await fs.writeFile(getSessionFilePath(), JSON.stringify(snapshot, null, 2), 'utf-8');
+}
+
+function persistSessionSnapshotSync(): void {
+  const snapshot = collectPersistedSessionSnapshot();
+  if (!snapshot) {
+    try {
+      unlinkSync(getSessionFilePath());
+    } catch {
+      // Ignore missing session snapshot file.
+    }
+    return;
+  }
+
+  try {
+    writeFileSync(getSessionFilePath(), JSON.stringify(snapshot, null, 2), 'utf-8');
+  } catch {
+    // Ignore sync persistence failures during shutdown.
+  }
 }
 
 function scheduleSessionPersist(): void {
@@ -859,6 +930,12 @@ function setupSessionHandlers() {
     const sourceWindow = BrowserWindow.fromWebContents(event.sender);
     if (!sourceWindow || sourceWindow.isDestroyed()) return false;
 
+    if (payload === null) {
+      windowSessionCache.delete(sourceWindow.id);
+      scheduleSessionPersist();
+      return true;
+    }
+
     const normalized = normalizeWindowSessionSnapshot(payload);
     if (!normalized) return false;
 
@@ -890,14 +967,20 @@ function setupSessionHandlers() {
     };
   });
 
-  ipcMain.handle('session-accept-restore', (event) => {
+  ipcMain.handle('session-accept-restore', (event, mode: unknown) => {
     const sourceWindow = BrowserWindow.fromWebContents(event.sender);
     if (!sourceWindow || sourceWindow.isDestroyed()) return null;
     if (!pendingRestoreSession?.windows.length) return null;
 
+    const restoreMode: SessionRestoreMode = mode === 'tabs' ? 'tabs' : 'windows';
     const [primaryWindow, ...otherWindows] = pendingRestoreSession.windows;
     pendingRestoreSession = null;
 
+    if (restoreMode === 'tabs') {
+      return mergeRestoreWindowsIntoSingleSnapshot([primaryWindow, ...otherWindows]) ?? primaryWindow;
+    }
+
+    applyWindowStateFromSnapshot(sourceWindow, primaryWindow);
     for (const snapshot of otherWindows) {
       createWindow(undefined, undefined, snapshot);
     }
@@ -918,6 +1001,23 @@ function setupSessionHandlers() {
     bootRestoreByWindowId.delete(sourceWindow.id);
     return snapshot;
   });
+}
+
+function applyWindowStateFromSnapshot(
+  win: BrowserWindow,
+  snapshot: WindowSessionSnapshot | undefined,
+): void {
+  if (!snapshot || win.isDestroyed()) return;
+
+  if (snapshot.bounds) {
+    win.setBounds(snapshot.bounds);
+  }
+  if (snapshot.isMaximized) {
+    win.maximize();
+  }
+  if (snapshot.isFullScreen) {
+    win.setFullScreen(true);
+  }
 }
 
 function setupUpdateHandlers() {
@@ -1175,12 +1275,7 @@ function createWindow(
     bootRestoreByWindowId.set(win.id, restoreSnapshot);
   }
 
-  if (restoreSnapshot?.isMaximized) {
-    win.maximize();
-  }
-  if (restoreSnapshot?.isFullScreen) {
-    win.setFullScreen(true);
-  }
+  applyWindowStateFromSnapshot(win, restoreSnapshot);
 
   const normalizedInitialUrl = initialUrl?.trim();
   if (normalizedInitialUrl) {
@@ -1221,8 +1316,29 @@ function createWindow(
 
   win.on('closed', () => {
     bootRestoreByWindowId.delete(win.id);
+    const noWindowsRemaining = BrowserWindow.getAllWindows().length === 0;
+
+    // Do not remove this snapshot immediately. Users may be closing windows
+    // in quick succession to quit the app, and we need all windows restorable.
+    // If the app keeps running, remove the closed window shortly after.
+    if (!isQuitting && !noWindowsRemaining) {
+      const existingTimer = pendingClosedWindowCleanupTimers.get(win.id);
+      if (existingTimer) {
+        clearTimeout(existingTimer);
+      }
+      const cleanupTimer = setTimeout(() => {
+        pendingClosedWindowCleanupTimers.delete(win.id);
+        if (isQuitting) return;
+        if (BrowserWindow.getAllWindows().length === 0) return;
+        windowSessionCache.delete(win.id);
+        scheduleSessionPersist();
+      }, 2000);
+      cleanupTimer.unref();
+      pendingClosedWindowCleanupTimers.set(win.id, cleanupTimer);
+      return;
+    }
+
     if (!isQuitting) {
-      windowSessionCache.delete(win.id);
       scheduleSessionPersist();
     }
   });
@@ -1322,9 +1438,13 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   isQuitting = true;
+  for (const timer of pendingClosedWindowCleanupTimers.values()) {
+    clearTimeout(timer);
+  }
+  pendingClosedWindowCleanupTimers.clear();
   if (sessionPersistTimer) {
     clearTimeout(sessionPersistTimer);
     sessionPersistTimer = null;
   }
-  void persistSessionSnapshot();
+  persistSessionSnapshotSync();
 });

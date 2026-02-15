@@ -34,6 +34,24 @@ export const LAYOUT_VALUE_DEFINITIONS: LayoutValueDefinition[] = [
     defaultValue: '8px',
   },
   {
+    key: 'layoutTabGap',
+    label: 'Tab Gap',
+    kind: 'length',
+    defaultValue: '6px',
+  },
+  {
+    key: 'layoutTabMinWidth',
+    label: 'Tab Minimum Width',
+    kind: 'length',
+    defaultValue: '100px',
+  },
+  {
+    key: 'layoutTabTargetWidth',
+    label: 'Tab Target Width',
+    kind: 'length',
+    defaultValue: '220px',
+  },
+  {
     key: 'layoutBorderWidth',
     label: 'Border Thickness',
     kind: 'length',
@@ -81,4 +99,3 @@ export function getLayoutValueDisplayName(key: string): string {
 export function getDefaultLayoutValues(): Record<string, string> {
   return Object.fromEntries(LAYOUT_VALUE_DEFINITIONS.map((entry) => [entry.key, entry.defaultValue]));
 }
-

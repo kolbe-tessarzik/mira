@@ -34,6 +34,8 @@ type SessionRestoreState = {
   windowCount: number;
 };
 
+type SessionRestoreMode = 'tabs' | 'windows';
+
 type TabsContextType = {
   tabs: Tab[];
   activeId: string;
@@ -57,12 +59,26 @@ type TabsContextType = {
   restorePromptOpen: boolean;
   restoreTabCount: number;
   restoreWindowCount: number;
-  restorePreviousSession: () => void;
+  restoreTabsFromPreviousSession: () => void;
+  restoreWindowsFromPreviousSession: () => void;
   discardPreviousSession: () => void;
 };
 
 const TabsContext = createContext<TabsContextType>(null!);
 export const useTabs = () => useContext(TabsContext);
+
+function isNewTabUrl(url: string, defaultTabUrl: string): boolean {
+  const normalized = url.trim().toLowerCase();
+  return normalized === 'mira://newtab' || normalized === defaultTabUrl.trim().toLowerCase();
+}
+
+function isSessionEphemeralTabUrl(url: string): boolean {
+  return url.trim().toLowerCase() === 'mira://newtab';
+}
+
+function filterRestorableTabs(tabs: Tab[]): Tab[] {
+  return tabs.filter((tab) => !isSessionEphemeralTabUrl(tab.url));
+}
 
 function createInitialTab(url: string): Tab {
   const now = Date.now();
@@ -144,13 +160,16 @@ function parseSnapshot(raw: string | null, defaultTabUrl: string): SessionSnapsh
     const tabs = tabsRaw
       .map((tab) => normalizeTab(tab, defaultTabUrl))
       .filter((tab): tab is Tab => tab !== null);
-    if (!tabs.length) return null;
+    const restorableTabs = filterRestorableTabs(tabs);
+    if (!restorableTabs.length) return null;
 
-    const activeIdRaw = typeof parsed.activeId === 'string' ? parsed.activeId : tabs[0].id;
-    const activeId = tabs.some((tab) => tab.id === activeIdRaw) ? activeIdRaw : tabs[0].id;
+    const activeIdRaw = typeof parsed.activeId === 'string' ? parsed.activeId : restorableTabs[0].id;
+    const activeId = restorableTabs.some((tab) => tab.id === activeIdRaw)
+      ? activeIdRaw
+      : restorableTabs[0].id;
 
     return {
-      tabs,
+      tabs: restorableTabs,
       activeId,
       savedAt: typeof parsed.savedAt === 'number' ? parsed.savedAt : Date.now(),
     };
@@ -182,9 +201,27 @@ export default function TabsProvider({ children }: { children: React.ReactNode }
   const tabSleepTimerRef = useRef<number | null>(null);
 
   const persistSession = (nextTabs: Tab[], nextActiveId: string) => {
+    const restorableTabs = filterRestorableTabs(nextTabs);
+    const safeActiveId = restorableTabs.some((tab) => tab.id === nextActiveId)
+      ? nextActiveId
+      : restorableTabs[0]?.id;
+
+    if (!restorableTabs.length || !safeActiveId) {
+      if (electron?.ipcRenderer) {
+        electron.ipcRenderer.invoke('session-save-window', null).catch(() => undefined);
+        return;
+      }
+      try {
+        localStorage.removeItem(SESSION_STORAGE_KEY);
+      } catch {
+        // Ignore storage failures (quota/private mode).
+      }
+      return;
+    }
+
     const snapshot: SessionSnapshot = {
-      tabs: nextTabs,
-      activeId: nextActiveId,
+      tabs: restorableTabs,
+      activeId: safeActiveId,
       savedAt: Date.now(),
     };
 
@@ -261,10 +298,10 @@ export default function TabsProvider({ children }: { children: React.ReactNode }
     };
   }, []);
 
-  const restorePreviousSession = () => {
+  const restorePreviousSession = (mode: SessionRestoreMode) => {
     const ipc = electron?.ipcRenderer;
     if (ipc) {
-      ipc.invoke<SessionSnapshot | null>('session-accept-restore')
+      ipc.invoke<SessionSnapshot | null>('session-accept-restore', mode)
         .then((snapshot) => {
           if (!snapshot || !snapshot.tabs.length) {
             setRestorePromptOpen(false);
@@ -303,6 +340,14 @@ export default function TabsProvider({ children }: { children: React.ReactNode }
     setRestorePromptOpen(false);
     setPendingSession(null);
     persistSession(restoredTabs, pendingSession.activeId);
+  };
+
+  const restoreTabsFromPreviousSession = () => {
+    restorePreviousSession('tabs');
+  };
+
+  const restoreWindowsFromPreviousSession = () => {
+    restorePreviousSession('windows');
   };
 
   const discardPreviousSession = () => {
@@ -366,21 +411,41 @@ export default function TabsProvider({ children }: { children: React.ReactNode }
     setActiveId(id);
   }, [activeId]);
 
-const openHistory = () => {
-  const activeTab = tabs.find((t) => t.id === activeId);
-  const newTabUrl = getBrowserSettings().newTabPage;
-  const isNewTab =
-    !!activeTab &&
-    (activeTab.url === newTabUrl || activeTab.url.toLowerCase() === 'mira://newtab');
+  const openHistory = () => {
+    const activeTab = tabs.find((t) => t.id === activeId);
+    const newTabUrl = getBrowserSettings().newTabPage;
+    const isNewTab = !!activeTab && isNewTabUrl(activeTab.url, newTabUrl);
 
-  if (isNewTab && activeTab) {
-    navigate('mira://history', activeTab.id); // reuse current tab
-  } else {
-    newTab('mira://history'); // open separate tab
-  }
-}
+    if (isNewTab && activeTab) {
+      navigate('mira://history', activeTab.id); // reuse current tab
+    } else {
+      newTab('mira://history'); // open separate tab
+    }
+  };
+
+  const closeCurrentWindow = () => {
+    const ipc = electron?.ipcRenderer;
+    if (ipc) {
+      ipc.invoke('session-save-window', null).catch(() => undefined);
+      ipc.invoke('window-close').catch(() => undefined);
+      return;
+    }
+
+    try {
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+    } catch {
+      // Ignore storage failures.
+    }
+    window.close();
+  };
 
   const closeTab = (id: string) => {
+    const shouldCloseWindow = tabs.length === 1 && tabs[0]?.id === id;
+    if (shouldCloseWindow) {
+      closeCurrentWindow();
+      return;
+    }
+
     setTabs((t) => {
       const next = t.filter((tab) => tab.id !== id);
       if (id !== activeId || !next.length) return next;
@@ -740,7 +805,8 @@ const openHistory = () => {
         restorePromptOpen,
         restoreTabCount: pendingSession?.tabs.length ?? restoreTabCountState,
         restoreWindowCount,
-        restorePreviousSession,
+        restoreTabsFromPreviousSession,
+        restoreWindowsFromPreviousSession,
         discardPreviousSession,
       }}
     >

@@ -74,6 +74,9 @@ body {
   --layoutInputRadius: 6px;
   --layoutPanelRadius: 8px;
   --layoutTabRadius: 8px;
+  --layoutTabGap: 6px;
+  --layoutTabMinWidth: 100px;
+  --layoutTabTargetWidth: 220px;
   --layoutBorderWidth: 1px;
   --layoutTopBarHeight: 38px;
   --layoutAddressBarPaddingY: 6px;
@@ -251,6 +254,36 @@ body {
   background: var(--tabBgHover, var(--surfaceBgHover));
   border-color: var(--tabBorderHover, var(--surfaceBorderHover));
   color: var(--tabTextHover, var(--surfaceTextHover));
+}
+
+.tab-strip-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tab-strip-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.tab-strip-fade-left,
+.tab-strip-fade-right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 18px;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+}
+
+.tab-strip-fade-left {
+  left: 0;
+  background: linear-gradient(to right, var(--surfaceBg, var(--tabBg)), transparent);
+}
+
+.tab-strip-fade-right {
+  right: 0;
+  background: linear-gradient(to left, var(--surfaceBg, var(--tabBg)), transparent);
 }
 
 @keyframes download-ring-spin {
