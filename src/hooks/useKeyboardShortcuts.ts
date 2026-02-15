@@ -125,6 +125,8 @@ export function useKeyboardShortcuts({
       }
       if (action === 'toggle-devtools') {
         toggleDevTools();
+        return;
+      }
       if (action === 'print-page') {
         printPage();
       }
