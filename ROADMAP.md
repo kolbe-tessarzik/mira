@@ -5,6 +5,7 @@
 - [x] Reload (Ctrl+R)
 - [ ] Fix other shortcuts
 - [x] Auto restore all windows
+- [ ] Make dev tools work
 
 ## v1.0.0 — Stable Release
 - [ ] Installer & portable builds for Windows, macOS, and Linux

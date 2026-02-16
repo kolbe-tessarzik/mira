@@ -1,4 +1,4 @@
-import { app, BrowserWindow, globalShortcut, ipcMain, Menu, shell, session } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, shell, session } from 'electron';
 import { v4 as uuidv4 } from 'uuid';
 import type { DownloadItem, WebContents } from 'electron';
 import { promises as fs, unlinkSync, writeFileSync } from 'fs';
@@ -876,14 +876,22 @@ function setupWebviewTabOpenHandler() {
     contents.on('before-input-event', (event, input) => {
       if (input.type !== 'keyDown' || input.isAutoRepeat) return;
       const key = input.key.toLowerCase();
-      const isPrimaryChord = (input.control || input.meta) && !input.shift;
+      const hasPrimaryModifier = input.control || input.meta;
+      const isPrimaryChord = hasPrimaryModifier && !input.shift;
       const isNewWindowChord = isPrimaryChord && key === 'n';
+      const isDevToolsChord = hasPrimaryModifier && input.shift && key === 'i';
 
-      if (!isNewWindowChord) return;
+      if (!isNewWindowChord && !isDevToolsChord) return;
 
       event.preventDefault();
       const hostWindow = BrowserWindow.fromWebContents(host);
       if (!hostWindow || hostWindow.isDestroyed()) return;
+
+      if (isDevToolsChord) {
+        hostWindow.webContents.send('app-shortcut', 'toggle-devtools');
+        return;
+      }
+
       triggerNewWindowFromShortcut(hostWindow);
     });
 
@@ -1204,20 +1212,6 @@ function setupWindowControlsHandlers() {
   );
 }
 
-function setupGlobalShortcuts() {
-  const devToolsAccelerator = isMacOS ? 'Command+Alt+I' : 'Ctrl+Shift+I';
-
-  globalShortcut.register(devToolsAccelerator, () => {
-    const focusedWindow = BrowserWindow.getFocusedWindow();
-    if (!focusedWindow || focusedWindow.isDestroyed()) return;
-    focusedWindow.webContents.send('app-shortcut', 'toggle-devtools');
-  });
-
-  app.on('will-quit', () => {
-    globalShortcut.unregisterAll();
-  });
-}
-
 function setupMacDockMenu() {
   if (!isMacOS) return;
   const dockMenu = Menu.buildFromTemplate([
@@ -1368,11 +1362,13 @@ function createWindow(
   win.webContents.on('before-input-event', (event, input) => {
     if (input.type !== 'keyDown' || input.isAutoRepeat) return;
     const key = input.key.toLowerCase();
-    const isPrimaryChord = (input.control || input.meta) && !input.shift;
+    const hasPrimaryModifier = input.control || input.meta;
+    const isPrimaryChord = hasPrimaryModifier && !input.shift;
     const isReloadChord = isPrimaryChord && key === 'r';
     const isFindChord = isPrimaryChord && key === 'f';
     const isNewWindowChord = isPrimaryChord && key === 'n';
     const isPrintChord = isPrimaryChord && key === 'p';
+    const isDevToolsChord = hasPrimaryModifier && input.shift && key === 'i';
     const isReloadKey = key === 'f5';
 
     if (isReloadChord || isReloadKey) {
@@ -1396,6 +1392,12 @@ function createWindow(
     if (isPrintChord) {
       event.preventDefault();
       win.webContents.send('app-shortcut', 'print-page');
+      return;
+    }
+
+    if (isDevToolsChord) {
+      event.preventDefault();
+      win.webContents.send('app-shortcut', 'toggle-devtools');
     }
   });
 
@@ -1412,7 +1414,6 @@ app.whenReady().then(async () => {
   setupWebviewTabOpenHandler();
   setupAdBlocker();
   setupWindowControlsHandlers();
-  setupGlobalShortcuts();
   setupMacDockMenu();
   scheduleAdBlockListRefresh();
   setupDownloadHandlers();
