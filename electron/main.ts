@@ -1368,8 +1368,9 @@ function createWindow(
     const isFindChord = isPrimaryChord && key === 'f';
     const isNewWindowChord = isPrimaryChord && key === 'n';
     const isPrintChord = isPrimaryChord && key === 'p';
-    const isDevToolsChord = hasPrimaryModifier && input.shift && key === 'i';
     const isReloadKey = key === 'f5';
+    const isDevToolsChord =
+      key === 'f12' || (isMacOS ? input.meta && input.alt && key === 'i' : input.control && input.shift && key === 'i');
 
     if (isReloadChord || isReloadKey) {
       event.preventDefault();
